@@ -1823,6 +1823,7 @@ function initLens(fluid) {
   const zoom = new Spring(DROP.idleZoom, 220, 26);
   const shape = new DropShape();
   let hovering = false, pressed = false, placed = false, wasShown = false;
+  const last = { lens: "", path: "", page: "", fixed: "", shadow: "" };
 
   window.addEventListener("pointermove", (e) => {
     if (e.pointerType !== "mouse") return;
@@ -1832,39 +1833,86 @@ function initLens(fluid) {
   window.addEventListener("pointerdown", () => { pressed = true; });
   window.addEventListener("pointerup", () => { pressed = false; });
 
-  // Touch: press and hold still for a moment and a drop forms above your finger (where the finger can't hide it);
-  // slide to move it. While it is up, the page doesn't scroll.
-  const touch = { on: false, timer: 0, x0: 0, y0: 0, x: 0, y: 0 };
-  const LIFT = 100, HOLD_MS = 380;
+  // Touch: a small drop rests on the screen by default (it rolls downhill when you tilt the phone and wobbles when
+  // the page jerks). Put a finger on it and it lifts above the finger (where the finger can't hide it), swells and
+  // follows; let go and it stays there. Press and hold anywhere else still calls it to your finger.
+  // While it is being carried, the page doesn't scroll.
+  const touch = { on: false, grab: false, moved: false, timer: 0, t0: 0, x0: 0, y0: 0, x: 0, y: 0 };
+  const LIFT = 100, HOLD_MS = 380, GRAB_SLOP = 22, DOCK_ROOM = 120;
+  const rest = { on: false, x: 0, y: 0 };
+  const REST = { radius: 34, zoom: 1.5 };
+  const keepOnScreen = (p) => {
+    p.x = clamp(p.x, 40, Frame.vw - 40);
+    p.y = clamp(p.y, 90, Math.max(90, Frame.vh - DOCK_ROOM));
+    return p;
+  };
   if (!FINE_POINTER) {
-    const stop = () => { clearTimeout(touch.timer); if (touch.on) { touch.on = false; root.classList.remove("has-touch-lens"); } };
+    const lift = (grab) => {
+      clearTimeout(touch.timer);
+      ensureMirror();
+      touch.on = true; touch.grab = grab;
+      if (!rest.on) { pos.x = touch.x; pos.y = touch.y - LIFT; pos.vx = pos.vy = 0; }
+      root.classList.add("has-touch-lens");
+      if (navigator.vibrate) navigator.vibrate(8);
+    };
+    const stop = () => {
+      clearTimeout(touch.timer);
+      if (!touch.on) return;
+      touch.on = false; touch.grab = false;
+      root.classList.remove("has-touch-lens");
+      // it settles where you left it
+      keepOnScreen(Object.assign(rest, { x: pos.x, y: pos.y }));
+    };
     window.addEventListener("touchstart", (e) => {
       if (e.touches.length !== 1 || document.querySelector("dialog[open]")) { stop(); return; }
       const t = e.touches[0];
       touch.x0 = touch.x = t.clientX; touch.y0 = touch.y = t.clientY;
+      touch.t0 = performance.now(); touch.moved = false;
       clearTimeout(touch.timer);
-      touch.timer = setTimeout(() => {
-        ensureMirror();
-        touch.on = true;
-        pos.x = touch.x; pos.y = touch.y - LIFT; pos.vx = pos.vy = 0;
-        root.classList.add("has-touch-lens");
-        if (navigator.vibrate) navigator.vibrate(8);
-      }, HOLD_MS);
+      if (rest.on && Math.hypot(touch.x - pos.x, touch.y - pos.y) <= radius.value + GRAB_SLOP) { lift(true); return; }
+      touch.timer = setTimeout(() => lift(false), HOLD_MS);
     }, { passive: true });
     window.addEventListener("touchmove", (e) => {
       const t = e.touches[0];
       if (!t) return;
       touch.x = t.clientX; touch.y = t.clientY;
+      if (Math.hypot(touch.x - touch.x0, touch.y - touch.y0) > 10) touch.moved = true;
       if (touch.on) { if (e.cancelable) e.preventDefault(); return; }
-      if (Math.hypot(touch.x - touch.x0, touch.y - touch.y0) > 10) clearTimeout(touch.timer);
+      if (touch.moved) clearTimeout(touch.timer);
     }, { passive: false });
-    window.addEventListener("touchend", stop, { passive: true });
+    window.addEventListener("touchend", (e) => {
+      // a quick tap on the resting drop just jiggles it; it doesn't click whatever is underneath
+      if (touch.grab && !touch.moved && performance.now() - touch.t0 < 260) {
+        if (e.cancelable) e.preventDefault();
+        radius.velocity += 260;
+      }
+      stop();
+    }, { passive: false });
     window.addEventListener("touchcancel", stop, { passive: true });
     window.addEventListener("contextmenu", (e) => { if (touch.on) e.preventDefault(); });
-  }
-  const target = () => (touch.on ? { x: touch.x, y: Math.max(touch.y - LIFT, 20) } : Pointer);
 
-  const shown = () => (touch.on || (placed && Pointer.active && Pointer.type === "mouse")) && !document.querySelector("dialog[open]");
+    // The resting drop appears once the page copy inside it is ready (built when the phone is idle, after loading).
+    const wake = () => {
+      ensureMirror();
+      if (!mirror) return;
+      keepOnScreen(Object.assign(rest, { x: Frame.vw * 0.8, y: Frame.vh * 0.6 }));
+      if (!touch.on) { pos.x = rest.x; pos.y = rest.y; pos.vx = pos.vy = 0; }
+      rest.on = true;
+    };
+    if ("requestIdleCallback" in window) requestIdleCallback(wake, { timeout: 1500 }); else setTimeout(wake, 600);
+    window.addEventListener("resize", () => { if (rest.on) keepOnScreen(rest); });
+  }
+  const aimAt = { x: 0, y: 0 };
+  const target = () => {
+    if (touch.on) { aimAt.x = touch.x; aimAt.y = Math.max(touch.y - LIFT, 20); return aimAt; }
+    if (!rest.on) return Pointer;
+    // tilt the phone and the resting drop rolls downhill, a little
+    aimAt.x = rest.x + Motion.x * Frame.vw * 0.22;
+    aimAt.y = rest.y + Motion.y * Frame.vh * 0.16;
+    return keepOnScreen(aimAt);
+  };
+
+  const shown = () => (touch.on || rest.on || (placed && Pointer.active && Pointer.type === "mouse")) && !document.querySelector("dialog[open]");
 
   if (waterCtx) {
     // the water under the drop, magnified by the same zoom as the page (uv origin is bottom-left)
@@ -1903,25 +1951,35 @@ function initLens(fluid) {
         pos.x += pos.vx * h; pos.y += pos.vy * h;
         axSum += ax; aySum += ay;
       }
-      radius.target = (big ? DROP.hoverRadius : DROP.idleRadius) * (pressed && !touch.on ? DROP.pressScale : 1);
-      zoom.target = big ? DROP.hoverZoom : DROP.idleZoom;
+      const resting = rest.on && !touch.on;
+      radius.target = (big ? DROP.hoverRadius : resting ? REST.radius : DROP.idleRadius) * (pressed && !touch.on && !rest.on ? DROP.pressScale : 1);
+      zoom.target = big ? DROP.hoverZoom : resting ? REST.zoom : DROP.idleZoom;
       const R = Math.max(4, radius.step(dt)), M = zoom.step(dt);
-      shape.step(dt, R, axSum / n, aySum / n);
+      // a resting drop also feels the page's jerks (pseudo-force −m·a), so it wobbles as you flick the page
+      const jerk = resting ? clamp(Frame.scrollAccel, -8000, 8000) * 2 : 0;
+      shape.step(dt, R, axSum / n, aySum / n - jerk);
       const pts = shape.outline(c, c, R);
 
-      lens.style.transform = `translate3d(${(pos.x - c).toFixed(2)}px, ${(pos.y - c).toFixed(2)}px, 0)`;
-      lens.style.clipPath = `path("${smoothPath(pts)}")`;
-      pageLayer.style.transform = `translate3d(${(c - (pos.x + Frame.scrollX) * M).toFixed(2)}px, ${(c - (pos.y + Frame.scrollY) * M).toFixed(2)}px, 0) scale(${M.toFixed(4)})`;
-      fixedLayer.style.transform = `translate3d(${(c - pos.x * M).toFixed(2)}px, ${(c - pos.y * M).toFixed(2)}px, 0) scale(${M.toFixed(4)})`;
+      // only write what changed: a resting drop over a still page costs (almost) nothing
+      const lensT = `translate3d(${(pos.x - c).toFixed(2)}px, ${(pos.y - c).toFixed(2)}px, 0)`;
+      if (lensT !== last.lens) { lens.style.transform = lensT; last.lens = lensT; }
+      const path = smoothPath(pts);
+      if (path !== last.path) {
+        lens.style.clipPath = `path("${path}")`; last.path = path;
+        opticsCtx.clearRect(0, 0, B, B);
+        paintOptics(opticsCtx, pts, c, R);
+      }
+      const pageT = `translate3d(${(c - (pos.x + Frame.scrollX) * M).toFixed(2)}px, ${(c - (pos.y + Frame.scrollY) * M).toFixed(2)}px, 0) scale(${M.toFixed(4)})`;
+      if (pageT !== last.page) { pageLayer.style.transform = pageT; last.page = pageT; }
+      const fixedT = `translate3d(${(c - pos.x * M).toFixed(2)}px, ${(c - pos.y * M).toFixed(2)}px, 0) scale(${M.toFixed(4)})`;
+      if (fixedT !== last.fixed) { fixedLayer.style.transform = fixedT; last.fixed = fixedT; }
       if (mirror) { mirror.placeStickies(Frame.scrollY); mirror.cull(Frame.scrollY + pos.y, B); }
-
-      opticsCtx.clearRect(0, 0, B, B);
-      paintOptics(opticsCtx, pts, c, R);
 
       // shadow: a soft ellipse cast away from the light, stretched with the drop's main mode
       const st = shape.stretch;
       const L = DROP.light;
-      shadow.style.transform = `translate3d(${(pos.x - L.x * R * 0.2).toFixed(2)}px, ${(pos.y - L.y * R * 0.2).toFixed(2)}px, 0) rotate(${st.angle.toFixed(3)}rad) scale(${(R * (1 + st.amount) / 50).toFixed(4)}, ${(R * (1 - st.amount) / 50).toFixed(4)})`;
+      const shadowT = `translate3d(${(pos.x - L.x * R * 0.2).toFixed(2)}px, ${(pos.y - L.y * R * 0.2).toFixed(2)}px, 0) rotate(${st.angle.toFixed(3)}rad) scale(${(R * (1 + st.amount) / 50).toFixed(4)}, ${(R * (1 - st.amount) / 50).toFixed(4)})`;
+      if (shadowT !== last.shadow) { shadow.style.transform = shadowT; last.shadow = shadowT; }
     },
   });
 }
@@ -2836,7 +2894,7 @@ function initHint() {
   const hint = $("hero-hint");
   if (FINE_POINTER || REDUCED || !hint) return;
   const text = hint.querySelector("span");
-  const plain = typeof window.DeviceOrientationEvent === "undefined" ? "Touch the water · hold to magnify" : "Tilt your phone · hold to magnify";
+  const plain = typeof window.DeviceOrientationEvent === "undefined" ? "Touch the water · drag the drop to magnify" : "Tilt your phone · drag the drop to magnify";
   text.textContent = plain;
   if (Motion.needsPermission) setTimeout(() => { if (!Motion.live) offer(); }, 1200);
   function offer() {
@@ -2848,7 +2906,7 @@ function initHint() {
   hint.replaceWith(button);
   button.addEventListener("click", async () => {
     const ok = Motion.request ? await Motion.request() : false;
-    button.querySelector("span").textContent = ok ? "Tilt your phone · hold to magnify" : "Touch the water · hold to magnify";
+    button.querySelector("span").textContent = ok ? "Tilt your phone · drag the drop to magnify" : "Touch the water · drag the drop to magnify";
     button.disabled = true;
   });
   }

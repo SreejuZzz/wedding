@@ -75,6 +75,30 @@ async function checkViewport(browser, { name, width, height, mobile }, problems)
     const hasLens = await page.evaluate(() => document.documentElement.classList.contains("has-lens"));
     if (!hasLens) problems.push("desktop: the water-drop lens did not appear on mouse move");
     await page.screenshot({ path: path.join(SHOTS, "desktop-lens.png"), clip: { x: x - 140, y: y - 120, width: 280, height: 240 } });
+  } else {
+    // phones: a drop rests on screen by default, and dragging it carries it along
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.waitForTimeout(1500);
+    const hasLens = await page.evaluate(() => document.documentElement.classList.contains("has-lens"));
+    if (!hasLens) problems.push("phone: the resting water drop did not appear");
+    const dropAt = () => page.evaluate(() => {
+      const m = /translate3d\(([-\d.]+)px, ([-\d.]+)px/.exec(document.getElementById("lens").style.transform || "");
+      const half = document.getElementById("lens").offsetWidth / 2;
+      return m ? { x: +m[1] + half, y: +m[2] + half } : null;
+    });
+    const from = await dropAt();
+    if (hasLens && from) {
+      await page.screenshot({ path: path.join(SHOTS, "phone-lens.png"), clip: { x: Math.max(0, from.x - 140), y: Math.max(0, from.y - 120), width: 280, height: 240 } });
+      const cdp = await context.newCDPSession(page);
+      const touch = (type, x, y) => cdp.send("Input.dispatchTouchEvent", { type, touchPoints: type === "touchEnd" ? [] : [{ x, y }] });
+      await touch("touchStart", from.x, from.y);
+      for (let i = 1; i <= 12; i++) { await touch("touchMove", from.x - i * 12, from.y + i * 8); await page.waitForTimeout(16); }
+      await touch("touchEnd");
+      await page.waitForTimeout(800);
+      const to = await dropAt();
+      if (!to || Math.hypot(to.x - from.x, to.y - from.y) < 40) problems.push(`phone: dragging the drop did not move it (${JSON.stringify(from)} -> ${JSON.stringify(to)})`);
+      else console.log(`phone: drop dragged from (${from.x.toFixed(0)}, ${from.y.toFixed(0)}) to (${to.x.toFixed(0)}, ${to.y.toFixed(0)})`);
+    }
   }
   await context.close();
 }

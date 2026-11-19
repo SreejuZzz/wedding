@@ -10,7 +10,7 @@ https://enchantedwoodsresort.in/). Exact map pin: https://maps.app.goo.gl/kFsiCW
   Placeholders `{{MAPS_URL}}`, `{{MAPS_URL_ENCODED}}`, `{{QR_SVG}}` are filled by the build.
 - `scripts/build.mjs` — builds `site/index.html` (injects the map link and generates the QR code as inline SVG with `qrcode`).
 - `scripts/check.mjs` — Playwright smoke test in headless Chromium: page/console errors, horizontal overflow (desktop 1366×860 and
-  phone 390×844), QR decodes to the map link (jsQR), lens appears; writes screenshots to `screenshots/`.
+  phone 390×844), QR decodes to the map link (jsQR), lens appears (phone: resting drop appears and drags); writes screenshots to `screenshots/`.
 - `scripts/serve.mjs` — zero-dependency static preview server for `site/` (default port 8000, `PORT=` to change).
 - `scripts/perf.mjs` (`npm run perf`) — scrolls the page and sweeps the mouse while recording every frame; prints frame-time
   percentiles and Chrome's layout / style-recalc / script counters. Headless uses a software GPU: compare runs, not absolutes
@@ -43,7 +43,9 @@ To test with an installed Chrome instead: `CHROME_PATH=/usr/bin/google-chrome np
   a **liquid-glass dock** at the bottom (`initDock`, ≤ 860px) whose black droplet slides between sections on two edge springs;
   the top bar hides while scrolling down; **tilt** (`Motion`, device orientation relative to a drifting baseline) moves the light,
   rolls the orbs, tilts the QR card and makes the paint sink downhill (Boussinesq buoyancy pass);
-  the water follows the finger while scrolling; **press-and-hold** (380 ms, still) raises the magnifying drop 100px above the finger.
+  the water follows the finger while scrolling; a **resting magnifying drop** sits on screen by default (radius 34, appears once the page
+  mirror is built at idle after the loader), rolls downhill with tilt and wobbles with `Frame.scrollAccel`; touching it lifts it 100px above
+  the finger and it follows until released (stays where dropped; a quick tap only jiggles it); **press-and-hold** (380 ms) elsewhere calls it to the finger.
   iOS needs a tap to allow motion: the hero hint turns into that button only if no motion events arrive within 1.2 s.
 - **"100% real physics":** every motion runs on a physical model, not keyframes:
   - Background water: WebGL2 Navier–Stokes solver (advection, vorticity confinement, Jacobi pressure projection) carrying two pigments,
@@ -119,8 +121,9 @@ Loading screen (glass bubble fills with water to 100%, then drains away) → flo
   If you add sticky elements, add their selector to `STICKY` in `createPageMirror`.
 - The magnifying drop shows the magnified water wherever the GPU hand-off works (phones included) and only paints the page blocks
   under it (`mirror.cull`): a whole page copy at 1.8× is a huge layer that some phone browsers refuse to draw.
-- The magnifying drop follows the mouse on desktop; on touch it appears on press-and-hold and blocks scrolling only while it is up.
-  The page mirror for it is built lazily on phones (first hold), since it clones every image.
+- The magnifying drop follows the mouse on desktop; on touch it rests on screen and blocks scrolling only while a finger carries it.
+  The page mirror for it is built on phones in `requestIdleCallback` after the loader, since it clones every image; the lens only writes
+  styles / repaints optics when they change, so a resting drop over a still page is nearly free.
 - On touch, prints use `touch-action: pan-y`: vertical swipes scroll, sideways swipes throw. Never trap vertical scrolling.
 - Fixed bars (nav, dock) respect `env(safe-area-inset-*)` (`viewport-fit=cover`); the footer leaves room for the dock.
 - Perf on phones: a 390×844 mobile context with `Emulation.setCPUThrottlingRate` 4 should hold 60 fps while scrolling (headed, real GPU).
