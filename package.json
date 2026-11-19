@@ -1,0 +1,26 @@
+{
+  "name": "sreejith-jestina-wedding",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Wedding website of Sreejith and Jestina, 10 January 2027, Enchanted Woods.",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "check": "node scripts/build.mjs && node scripts/check.mjs",
+    "serve": "node scripts/serve.mjs",
+    "dev": "node scripts/build.mjs && node scripts/serve.mjs",
+    "setup:browsers": "playwright install chromium",
+    "perf": "node scripts/build.mjs && node scripts/perf.mjs"
+  },
+  "dependencies": {
+    "qrcode": "1.5.4"
+  },
+  "devDependencies": {
+    "jsqr": "1.4.0",
+    "playwright": "1.64.1",
+    "pngjs": "7.0.0"
+  }
+}
