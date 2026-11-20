@@ -83,7 +83,10 @@ To test with an installed Chrome instead: `CHROME_PATH=/usr/bin/google-chrome np
     page (the paper `.loader-sheet` gets `clip-path: path(evenodd, …)` with the drop’s outline as the hole), so it lands showing the photo.
     Then the paper opens from the photo as a wave front (starts from rest, runs at constant speed, meniscus edge with shadow), a ring goes
     into the water (`Water.ripple`), the drop’s shading fades on a spring and `is-ready` fires, so the names rise as the front uncovers them.
-    If the photo isn’t on screen the paper opens from where the drop is. Reduced motion: one still drop, removed as soon as loading finishes.
+    If the photo isn’t on screen the paper opens from where the drop is. Keep the hand-over light: `Page.ready` (names rise) fires when the
+    paper starts opening, `Page.shown` when the loader is gone; the hero orb holds still until `Page.shown` (so the drop lands on it), the
+    water only judges its frame rate after `Page.shown`, and the lens builds its page copy ~1.2 s after that, when idle. The loader canvas
+    clears only what it painted last frame. Reduced motion: one still drop, removed as soon as loading finishes.
     No percentage or text beyond the names and date.
   - Photo table: Matter.js rigid bodies seen from above (no gravity, table friction, collisions, throwing).
   - Petal shower: each petal is a falling plate (Andersen–Pesavento–Wang 2005 quasi-steady model: angle-of-attack drag, circulation lift,

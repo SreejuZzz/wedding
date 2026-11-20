@@ -700,7 +700,8 @@ class Spring {
  * acceleration: anything riding on the page feels the pseudo-force −m·a of an accelerating frame.
  */
 const Frame = { now: 0, dt: 1 / 60, scrollX: 0, scrollY: 0, scrollVelocity: 0, scrollSpeed: 0, scrollAccel: 0, vw: window.innerWidth, vh: window.innerHeight };
-const Page = { ready: false };
+/** ready: the loader starts handing over (the names rise); shown: the loader is gone, heavy work may start. */
+const Page = { ready: false, shown: false };
 const Ticker = (() => {
   const jobs = [], active = [];
   let raf = 0, last = 0, running = false;
@@ -1383,7 +1384,7 @@ function initFluid() {
   Ticker.add({
     write(dt) {
       time += dt;
-      if (!degraded && Page.ready) {
+      if (!degraded && Page.shown) {
         slowFrames = dt > 0.034 ? slowFrames + 1 : Math.max(0, slowFrames - 1);
         if (slowFrames > 40) { degraded = true; fluid.degrade(); }
       }
@@ -1533,8 +1534,9 @@ function runLoader(tasks) {
 
   function open() {
     phase = "open"; phaseAt = performance.now();
-    front.x = merged.x; front.y = merged.y;
-    front.r = holeOf(merged.size.value); front.v = 0;
+    const at = target || merged;
+    front.x = at.x; front.y = at.y;
+    front.r = holeOf(target ? target.r : merged.size.value); front.v = 0;
     front.speed = Math.max(VW, VH) * 1.6;
     front.end = Math.hypot(Math.max(front.x, VW - front.x), Math.max(front.y, VH - front.y)) + 40;
     optics.target = 0;
@@ -1621,20 +1623,30 @@ function runLoader(tasks) {
     ctx.beginPath(); ctx.arc(x, y, R, 0, Math.PI * 2); ctx.stroke();
   }
 
-  function draw() {
+  // only the area painted last frame is cleared, not the whole screen
+  const dirty = { x0: 0, y0: 0, x1: 0, y1: 0 };
+  const reach = (x, y, R) => {
+    dirty.x0 = Math.min(dirty.x0, x - R); dirty.y0 = Math.min(dirty.y0, y - R);
+    dirty.x1 = Math.max(dirty.x1, x + R); dirty.y1 = Math.max(dirty.y1, y + R);
+  };
+  function draw(pts) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, VW, VH);
-    if (phase === "open") paintFront();
+    if (dirty.x1 > dirty.x0) ctx.clearRect(dirty.x0 - 2, dirty.y0 - 2, dirty.x1 - dirty.x0 + 4, dirty.y1 - dirty.y0 + 4);
+    dirty.x0 = dirty.y0 = Infinity; dirty.x1 = dirty.y1 = -Infinity;
+    if (phase === "open") { paintFront(); reach(front.x, front.y, front.r + 24); }
     if (phase === "gather") {
       for (const d of drops) {
         const R = d.size.value;
-        if (R >= 0.5) paintDrop(d.shape.outline(home.x + d.x, home.y, R), home.x + d.x, home.y, R);
+        if (R < 0.5) continue;
+        paintDrop(d.shape.outline(home.x + d.x, home.y, R), home.x + d.x, home.y, R);
+        reach(home.x + d.x, home.y, R * 1.8 + 12);
       }
     } else if (merged && optics.value > 0.01) {
       const R = merged.size.value;
       ctx.globalAlpha = clamp(optics.value, 0, 1);
-      paintDrop(merged.shape.outline(merged.x, merged.y, R), merged.x, merged.y, R);
+      paintDrop(pts || merged.shape.outline(merged.x, merged.y, R), merged.x, merged.y, R);
       ctx.globalAlpha = 1;
+      reach(merged.x, merged.y, R * 1.8 + 12);
     }
   }
 
@@ -1644,11 +1656,14 @@ function runLoader(tasks) {
     loader.classList.add("is-done");
     document.body.classList.add("is-ready");
     Page.ready = true;
-    resolveReady();
   };
   let resolveReady;
   const ready = new Promise((resolve) => { resolveReady = resolve; });
-  const end = () => { loader.remove(); window.removeEventListener("resize", measure); job.done = true; };
+  const end = () => {
+    loader.remove(); window.removeEventListener("resize", measure); job.done = true;
+    Page.shown = true;
+    resolveReady();
+  };
 
   const job = Ticker.add({
     write(dt, now) {
@@ -1674,9 +1689,14 @@ function runLoader(tasks) {
         const t = photoOnScreen();
         if (t) target = t;   // follow the photo if the layout shifts (fonts, scrolling)
         fly(dt);
-        // the window has the drop's own (wobbling) outline
-        const R = merged.size.value;
-        setHole(R > 2 ? smoothPath(merged.shape.outline(merged.x, merged.y, holeOf(R))) : "");
+        if (phase === "fly") {
+          // the window has the drop's own (wobbling) outline, just inside its rim
+          const R = merged.size.value, pts = merged.shape.outline(merged.x, merged.y, R);
+          const k = holeOf(R) / Math.max(R, 1);
+          setHole(R > 2 ? smoothPath(pts.map(([x, y]) => [merged.x + (x - merged.x) * k, merged.y + (y - merged.y) * k])) : "");
+          draw(pts);
+          return;
+        }
       } else if (phase === "open") {
         // the front starts from rest and runs out at a constant wave speed
         const n = Math.max(1, Math.ceil(dt / SPRING_STEP)), h = dt / n;
@@ -1956,7 +1976,9 @@ function initLens(fluid) {
     mirrorTried = true;
     try { mirror = createPageMirror(pageLayer, fixedLayer); } catch (error) { console.warn("[lens mirror]", error); }
   };
-  if (FINE_POINTER) ensureMirror();
+  // cloning the page is a long task: do it when idle, after the hand-over has finished
+  const afterIntro = (fn) => setTimeout(() => ("requestIdleCallback" in window ? requestIdleCallback(fn, { timeout: 1500 }) : fn()), 1200);
+  if (FINE_POINTER) afterIntro(ensureMirror);
   let rebuildTimer;
   window.addEventListener("resize", () => { clearTimeout(rebuildTimer); rebuildTimer = setTimeout(() => mirror && mirror.rebuild(), 250); });
 
@@ -2042,7 +2064,7 @@ function initLens(fluid) {
       if (!touch.on) { pos.x = rest.x; pos.y = rest.y; pos.vx = pos.vy = 0; }
       rest.on = true;
     };
-    if ("requestIdleCallback" in window) requestIdleCallback(wake, { timeout: 1500 }); else setTimeout(wake, 600);
+    afterIntro(wake);
     window.addEventListener("resize", () => { if (rest.on) keepOnScreen(rest); });
   }
   const aimAt = { x: 0, y: 0 };
@@ -2349,7 +2371,7 @@ function liquidOrb(orb, rangeX, rangeY, makesWaves) {
   Geometry.track(orb);
   let last = "";
   Ticker.add({
-    active: () => vis.visible,
+    active: () => vis.visible && Page.shown, // still under the loader, so the drop lands exactly on it
     write(dt) {
       if (FINE_POINTER && Pointer.active) {
         x.target = (Pointer.x / Frame.vw - 0.5) * rangeX;
