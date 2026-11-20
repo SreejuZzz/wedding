@@ -46,7 +46,8 @@ To test with an installed Chrome instead: `CHROME_PATH=/usr/bin/google-chrome np
   the water follows the finger while scrolling; a **resting magnifying drop** sits on screen by default (radius 34, appears once the page
   mirror is built at idle after the loader), rolls downhill with tilt and wobbles with `Frame.scrollAccel`; touching it lifts it 100px above
   the finger and it follows until released (stays where dropped; a quick tap only jiggles it); **press-and-hold** (380 ms) elsewhere calls it to the finger.
-  iOS needs a tap to allow motion: the hero hint turns into that button only if no motion events arrive within 1.2 s.
+  iOS needs a tap to allow motion: a small button appears under the hero only if no motion events arrive within 1.2 s, and is removed once answered.
+- **No helper or instructional text** ("tap here", "drag…", notes under buttons, repeated dates). The couple asked to keep the page clean.
 - **"100% real physics":** every motion runs on a physical model, not keyframes:
   - Background water: WebGL2 Navier–Stokes solver (advection, vorticity confinement, Jacobi pressure projection) carrying two pigments,
     sap green (dye `r`), cadmium orange (dye `g`) and titanium white (dye `b`). They are drawn with **Kubelka–Munk** (layer over paper,

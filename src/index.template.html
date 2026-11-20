@@ -284,9 +284,6 @@ button.hero-hint { border: 0; background: none; padding: 8px 0; cursor: pointer;
 .odo-col { display: flex; flex-direction: column; will-change: transform; }
 .odo-col span { height: 1em; text-align: center; }
 .count-done { font: italic 400 34px var(--serif); }
-.fact-list { display: grid; gap: 0; border-top: 1px solid var(--line); }
-.fact-list div { display: flex; justify-content: space-between; gap: 16px; padding-block: 14px; border-bottom: 1px solid var(--line); }
-.fact-list dd { font: 400 20px/1.3 var(--serif); text-align: right; }
 @media (max-width: 900px) { .invite-panel { grid-template-columns: 1fr; } }
 @media (max-width: 420px) { .odometer { gap: 8px; } .odo-unit { padding-inline: 4px; } .odo-unit .label { font-size: 11.5px; letter-spacing: .08em; } }
 
@@ -331,7 +328,6 @@ button.hero-hint { border: 0; background: none; padding: 8px 0; cursor: pointer;
 /* ---------- Photo table ---------- */
 .table-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 22px; margin-bottom: 28px; }
 .table-actions { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
-.table-actions p { color: var(--ink-soft); font-size: 15.5px; }
 .desk { position: relative; height: clamp(560px, 76vh, 760px); overflow: hidden; touch-action: pan-y; }
 @media (max-width: 600px) { .desk { height: clamp(700px, 88svh, 800px); } .desk .print { --w: 26vw; } }
 .desk-prints { display: flex; flex-wrap: wrap; justify-content: center; gap: 18px; padding: 32px; }
@@ -381,7 +377,6 @@ button.hero-hint { border: 0; background: none; padding: 8px 0; cursor: pointer;
 .qr { width: min(100%, 236px); aspect-ratio: 1; padding: 12px; background: #fff; border-radius: 18px; box-shadow: inset 0 0 0 1px rgba(24,32,27,.08); transform: translateZ(36px); }
 .qr svg { width: 100%; height: 100%; display: block; }
 .qr-title { font: italic 400 30px/1.1 var(--serif); transform: translateZ(22px); }
-.qr-sub { font-size: 15px; color: var(--ink-soft); margin-top: -10px; }
 @media (max-width: 900px) { .venue-panel { grid-template-columns: 1fr; } }
 @media (max-width: 520px) { .venue-facts { grid-template-columns: 1fr; } }
 
@@ -392,7 +387,6 @@ button.hero-hint { border: 0; background: none; padding: 8px 0; cursor: pointer;
 .finale-line { font: 400 clamp(46px, 5.6vw, 86px)/1 var(--serif); letter-spacing: -0.015em; }
 .finale-line em { color: var(--emerald); }
 .signature { font: italic 400 clamp(28px, 2.6vw, 36px) var(--serif); color: var(--gold); }
-.bless-note { font-size: 15.5px; color: var(--ink-soft); }
 #petal-canvas { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 90; }
 @media (max-width: 900px) { .finale-panel { grid-template-columns: 1fr; } }
 
@@ -474,7 +468,7 @@ footer { padding-block: 24px 40px; }
       <div class="fact"><span class="label">Venue</span><b>Enchanted Woods, Thottuva</b></div>
       <a class="btn btn-ink magnetic" href="#venue">Directions <span class="arrow" aria-hidden="true">→</span></a>
     </div>
-    <p class="hero-hint" id="hero-hint" aria-hidden="true"><i></i><span>Move through the water</span></p>
+    <p class="hero-hint" id="hero-hint" hidden></p>
   </div>
 </header>
 
@@ -494,7 +488,6 @@ footer { padding-block: 24px 40px; }
         <p class="ml-line" lang="ml">നിങ്ങളെ സ്നേഹപൂർവ്വം ക്ഷണിക്കുന്നു</p>
       </div>
       <div class="invite-side">
-        <p class="label">Counting down</p>
         <div class="odometer" id="odometer" role="timer" aria-live="off">
           <div class="odo-unit"><div class="odo-digits" data-unit="days"></div><span class="label">Days</span></div>
           <div class="odo-unit"><div class="odo-digits" data-unit="hours"></div><span class="label">Hours</span></div>
@@ -502,11 +495,6 @@ footer { padding-block: 24px 40px; }
           <div class="odo-unit"><div class="odo-digits" data-unit="seconds"></div><span class="label">Sec</span></div>
         </div>
         <p class="count-done" id="count-done" hidden></p>
-        <dl class="fact-list">
-          <div><dt class="label">Date</dt><dd>Sunday, 10 January 2027</dd></div>
-          <div><dt class="label">Time</dt><dd>10:00 am to 3:00 pm</dd></div>
-          <div><dt class="label">Place</dt><dd>Enchanted Woods, Thottuva</dd></div>
-        </dl>
         <div><a class="btn btn-glass magnetic" href="https://calendar.google.com/calendar/render?action=TEMPLATE&amp;text=Sreejith%20%26%20Jestina%20%E2%80%94%20Wedding&amp;dates=20270110T043000Z%2F20270110T093000Z&amp;location=Enchanted%20Woods%2C%20Koovappady%20P.O.%2C%20Thottuva%2C%20Perumbavoor%20683544&amp;details=Ceremony%20and%20lunch%2C%2010%3A00%20am%20to%203%3A00%20pm%20IST.%20Directions%3A%20{{MAPS_URL_ENCODED}}">Add to calendar <span class="arrow" aria-hidden="true">→</span></a></div>
       </div>
     </div>
@@ -565,7 +553,6 @@ footer { padding-block: 24px 40px; }
         <h2 class="heading" id="moments-title">A table of <em>prints</em></h2>
       </div>
       <div class="table-actions">
-        <p>Drag, throw, or tap a print to open it.</p>
         <button class="btn btn-ink magnetic" type="button" id="toss-btn">Toss them</button>
       </div>
     </div>
@@ -618,7 +605,6 @@ footer { padding-block: 24px 40px; }
           <p class="label">Directions</p>
           <span class="qr" role="img" aria-label="QR code linking to the venue on Google Maps">{{QR_SVG}}</span>
           <p class="qr-title">Scan to find your way</p>
-          <p class="qr-sub">Opens the venue in Google Maps</p>
         </a>
       </div>
     </div>
@@ -638,7 +624,6 @@ footer { padding-block: 24px 40px; }
         <h2 class="finale-line" id="finale-title">We look forward to celebrating <em>with you</em>.</h2>
         <p class="signature">Sreejith &amp; Jestina</p>
         <button class="btn btn-ink magnetic" type="button" id="bless-btn">Shower your blessings</button>
-        <p class="bless-note">Jasmine, kanakambaram and rose petals. Tap as often as you like.</p>
       </div>
     </div>
   </div>
@@ -2910,29 +2895,25 @@ function initDock() {
 }
 
 /* =====================================================================
-   Hero hint: on a phone it says what the water does; on iOS it is also the
-   button that asks for motion access, so tilting can move the water.
+   iOS only: a short button that asks for motion access, so tilting can move the water.
+   It appears only when access is needed and disappears once answered; no other hint text.
    ===================================================================== */
 function initHint() {
   const hint = $("hero-hint");
-  if (FINE_POINTER || REDUCED || !hint) return;
-  const text = hint.querySelector("span");
-  const plain = typeof window.DeviceOrientationEvent === "undefined" ? "Touch the water · drag the drop to magnify" : "Tilt your phone · drag the drop to magnify";
-  text.textContent = plain;
-  if (Motion.needsPermission) setTimeout(() => { if (!Motion.live) offer(); }, 1200);
-  function offer() {
-  const button = document.createElement("button");
-  Motion.onLive = () => { if (button.isConnected) { hint.querySelector("span").textContent = plain; button.replaceWith(hint); } };
-  button.type = "button";
-  button.className = "hero-hint";
-  button.innerHTML = "<i></i><span>Tap here, then tilt your phone to move the water</span>";
-  hint.replaceWith(button);
-  button.addEventListener("click", async () => {
-    const ok = Motion.request ? await Motion.request() : false;
-    button.querySelector("span").textContent = ok ? "Tilt your phone · drag the drop to magnify" : "Touch the water · drag the drop to magnify";
-    button.disabled = true;
-  });
-  }
+  if (FINE_POINTER || REDUCED || !hint || !Motion.needsPermission) return;
+  setTimeout(() => {
+    if (Motion.live) return;
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "hero-hint";
+    button.innerHTML = "<i></i><span>Tap to let the water follow your phone</span>";
+    hint.replaceWith(button);
+    Motion.onLive = () => button.remove();
+    button.addEventListener("click", async () => {
+      if (Motion.request) await Motion.request();
+      button.remove();
+    });
+  }, 1200);
 }
 
 function initCopyAddress() {
