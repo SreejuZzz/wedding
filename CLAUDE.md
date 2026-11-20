@@ -91,7 +91,7 @@ Loading screen (glass bubble fills with water to 100%, then drains away) → flo
 - Travel distances (airport and Angamaly station, ~15 km each) come from Wikipedia's Thottuva page; the couple asked to keep them.
 - Malayalam lines: "വിവാഹം" and "നിങ്ങളെ സ്നേഹപൂർവ്വം ക്ഷണിക്കുന്നു" — the couple can confirm wording.
 - No RSVP (the couple removed it on purpose).
-- Photos: `hero-bamboo.jpg` (hero orb), `sreejith-bw.jpg`, `jestina-bw.jpg`, `together-bw.jpg` (couple section),
+- Photos: `hero-bamboo.jpg` (hero orb), `sreejith-bw.jpg`, `jestina-bw.jpg`, `together-bw.jpg` (couple section; the bouquet photo since 20 Nov),
   `roll-01..05.jpg` + `closing.jpg` (photo table / finale). Sources are ~720×960; don't display them much larger than that.
 
 ## Performance rules (the couple asked for "smooth", keep it that way)
