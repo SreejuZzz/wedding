@@ -34,7 +34,7 @@ To test with an installed Chrome instead: `CHROME_PATH=/usr/bin/google-chrome np
 
 - **Light-mode liquid glass floating on water.** Frosted glass panels (`.glass`) over a full-screen watercolour fluid simulation.
 - **Accents are pure black and white only.** Buttons are solid black, inverting to white with a black ring on hover; countdown tiles black;
-  programme rows turn black as you reach them. Colour comes from the water (greens and oranges), the photos and the petals.
+  the programme bead and its inked rail are black. Colour comes from the water (greens and oranges), the photos and the petals.
 - **Typography:** Instrument Serif (display), Geist (UI/body), Manjari (Malayalam, subset to the page's own text). Loaded from Google Fonts.
 - **Readability rules:** dark ink on milky glass; body ≥ 16px; labels ≥ 12.5px; never dim text for effect; never put text on top of photos.
   Glass fill never goes below 64% white: that keeps `--ink-mute` (#404040) at ≥ 4.5:1 even over the darkest paint.
@@ -74,7 +74,7 @@ To test with an installed Chrome instead: `CHROME_PATH=/usr/bin/google-chrome np
     (underdamped rise), the loader drops, the couple scene (each figure follows scroll progress through its own spring), the lightbox (the print flies to the
     centre), in-page link scrolling (critically damped).
   - `Frame.scrollAccel` (px/s²) is the page's acceleration; things riding on the page feel the pseudo-force −m·a:
-    the programme rows hang as a coupled mass–spring chain, the orbs float (buoyancy oscillator + Ornstein–Uhlenbeck forcing), the marquee is a
+    the programme bead (a mass on the rail, on a damped spring to the reading line) lags and swings, the orbs float (buoyancy oscillator + Ornstein–Uhlenbeck forcing), the marquee is a
     belt with mass whose shear is a spring driven by its acceleration.
   - Loader: two water drops (him and her) condense on either side (radius overshoots on a spring) and slide together on springs as loading
     progresses, each wobbling with `DropShape` modes; on contact they coalesce into one drop of summed area (R = √(r₁² + r₂²)) seeded with the
@@ -101,12 +101,14 @@ Loading screen (two drops slide together and become one, the drop flies into the
 → velocity marquee → invitation + countdown + Add to calendar → "Him / Her / Us" pinned 3D scroll story ("Him" and "Her" ride above
   the groom and bride cards; they glide together, grow and dissolve completely into the "together" card, which carries "Us";
   all three use the same glass card frame)
-→ programme → "A table of prints" (Matter.js) → venue (name, map button, tilting QR card) → finale with "Shower your blessings" → footer.
+→ programme (the day as one rail: times on nodes spaced by duration, a black bead rides it with the reading line and inks it;
+  on 10 Jan 2027 between 10:00 and 15:00 IST it follows the clock instead) → "A table of prints" (Matter.js) → venue (name, map button, tilting QR card) → finale with "Shower your blessings" → footer.
 
 ## Content status / open items
 
-- **Programme times are placeholders** (10:00 arrival, 10:30 ceremony, 11:30 blessings & photographs, 12:30 lunch, 14:30 farewell).
-  Only the 10:00–15:00 window is confirmed. Ask the couple for the real schedule.
+- **Programme** (from the couple, 20 Nov): 10:30 arrival, 11:00 ceremony; 11:30 blessings & photographs, 12:30 lunch and 14:30 farewell
+  are kept as they were. The event window stays 10:00–15:00 (countdown, calendar link, facts bar). Each `<li>` carries `--mins` (minutes
+  to the next item) for the spacing; update it if a time changes.
 - Venue section shows only the name, “Open in Google Maps” and the QR card (the couple removed the description, address, phone,
   travel distances, parking, website and “Copy address” on 20 Nov). Address and phone stay in this file for reference only.
 - Malayalam lines: "വിവാഹം" and "നിങ്ങളെ സ്നേഹപൂർവ്വം ക്ഷണിക്കുന്നു" — the couple can confirm wording.

@@ -308,16 +308,38 @@ button.hero-hint { border: 0; background: none; padding: 8px 0; cursor: pointer;
 .programme-grid { display: grid; grid-template-columns: 4fr 8fr; gap: clamp(28px, 5vw, 80px); align-items: start; }
 .programme-intro { display: grid; gap: 20px; position: sticky; top: 120px; }
 .programme-intro p:not(.label) { color: var(--ink-soft); max-width: 32ch; }
-.programme { position: relative; list-style: none; margin: 0; padding: 12px; display: grid; gap: 10px; }
-.programme { perspective: 1200px; }
-.programme li { display: grid; grid-template-columns: 8ch minmax(0, 1fr); gap: 4px 24px; align-items: baseline; padding: 22px 24px; border-radius: 22px; background: rgba(255,255,255,.6); box-shadow: inset 0 1px 1px #fff, inset 0 0 0 1px rgba(0,0,0,.06), 0 14px 24px -18px rgba(0,0,0,.35); transition: background-color .4s, color .4s; will-change: transform; }
-.programme li.is-passed { background: var(--black); color: var(--white); }
-.programme li.is-passed p { color: rgba(255,255,255,.82); }
-.programme time { font: 400 clamp(32px, 3vw, 42px)/1 var(--serif); font-variant-numeric: tabular-nums lining-nums; transition: color .4s; }
-.programme h3 { font: italic 400 clamp(26px, 2.3vw, 32px)/1.15 var(--serif); }
-.programme p { grid-column: 2; color: var(--ink-soft); font-size: 16.5px; }
+/* The day as one thread: each time is a node on a rail, spaced by the minutes until the next one.
+   A black bead rides the rail with your reading position (on the day itself, with the clock) and inks it as it goes. */
+.programme { position: relative; padding: clamp(26px, 3.4vw, 44px) clamp(20px, 3vw, 40px); }
+.prog-list { list-style: none; margin: 0; padding: 0; }
+.programme li {
+  --row: clamp(32px, 3vw, 42px);
+  display: grid; grid-template-columns: max-content 30px minmax(0, 1fr); grid-template-areas: "time mark body"; column-gap: 18px;
+  align-items: start; padding-bottom: calc(30px + var(--mins, 0) * 0.42px);
+}
+.programme li:last-child { padding-bottom: 0; }
+.programme time { grid-area: time; font: 400 var(--row)/1 var(--serif); font-variant-numeric: tabular-nums lining-nums; text-align: right; }
+.prog-mark { grid-area: mark; height: var(--row); padding-bottom: calc(var(--row) * 0.1); display: grid; place-items: center; } /* centred on the digits, not the line box */
+.prog-node { position: relative; z-index: 1; display: block; width: 14px; height: 14px; border-radius: 50%; background: #fff; box-shadow: inset 0 0 0 1.5px var(--black), 0 0 0 4px rgba(255,255,255,.7); }
+.programme li.is-passed .prog-node { background: var(--black); }
+.prog-body { grid-area: body; display: grid; gap: 6px; }
+.programme h3 { font: italic 400 clamp(26px, 2.3vw, 32px)/var(--row) var(--serif); }
+.programme p { color: var(--ink-soft); font-size: 16.5px; max-width: 40ch; }
+.prog-rail, .prog-fill { position: absolute; left: 0; top: 0; width: 2px; margin-left: -1px; border-radius: 2px; pointer-events: none; }
+.prog-rail { background: rgba(0,0,0,.16); }
+.prog-fill { background: var(--black); transform-origin: 50% 0; transform: scaleY(0); will-change: transform; }
+.prog-bead {
+  position: absolute; left: 0; top: 0; z-index: 2; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle at 34% 28%, #fff 0 9%, rgba(255,255,255,0) 26%), radial-gradient(circle at 50% 60%, #3a3a3a, #000 68%);
+  box-shadow: 0 7px 14px -5px rgba(0,0,0,.55), inset 0 -2px 3px rgba(255,255,255,.18);
+  will-change: transform;
+}
 @media (max-width: 860px) { .programme-grid { grid-template-columns: 1fr; } .programme-intro { position: static; } }
-@media (max-width: 520px) { .programme li { grid-template-columns: 1fr; } .programme p { grid-column: 1; } }
+@media (max-width: 520px) {
+  .programme li { --row: 30px; grid-template-columns: 26px minmax(0, 1fr); grid-template-areas: "mark time" ". body"; column-gap: 14px; row-gap: 2px; }
+  .programme time { text-align: left; }
+  .programme h3 { line-height: 1.15; }
+}
 
 /* ---------- Photo table ---------- */
 .table-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 22px; margin-bottom: 28px; }
@@ -522,13 +544,18 @@ footer { padding-block: 24px 40px; }
       <h2 class="heading" id="programme-title">The <em>programme</em></h2>
       <p>Five hours at Enchanted Woods, from the morning ceremony to lunch on the lawn.</p>
     </div>
-    <ol class="programme glass" id="programme-list">
-      <li><time datetime="2027-01-10T10:00+05:30">10:00</time><h3>Arrival</h3><p>Guests are welcomed in the bamboo grove. Parking is on site.</p></li>
-      <li><time datetime="2027-01-10T10:30+05:30">10:30</time><h3>The ceremony</h3><p>On the lawn. Kindly be seated a few minutes before.</p></li>
-      <li><time datetime="2027-01-10T11:30+05:30">11:30</time><h3>Blessings &amp; photographs</h3><p>With family, by the river.</p></li>
-      <li><time datetime="2027-01-10T12:30+05:30">12:30</time><h3>Lunch</h3><p>Served on the lawn.</p></li>
-      <li><time datetime="2027-01-10T14:30+05:30">14:30</time><h3>Farewell</h3><p>Concluding by three o’clock.</p></li>
-    </ol>
+    <div class="programme glass" id="programme-list">
+      <ol class="prog-list">
+        <li style="--mins:30"><time datetime="2027-01-10T10:30+05:30">10:30</time><span class="prog-mark" aria-hidden="true"><i class="prog-node"></i></span><div class="prog-body"><h3>Arrival</h3><p>Guests are welcomed in the bamboo grove. Parking is on site.</p></div></li>
+        <li style="--mins:30"><time datetime="2027-01-10T11:00+05:30">11:00</time><span class="prog-mark" aria-hidden="true"><i class="prog-node"></i></span><div class="prog-body"><h3>The ceremony</h3><p>On the lawn. Kindly be seated a few minutes before.</p></div></li>
+        <li style="--mins:60"><time datetime="2027-01-10T11:30+05:30">11:30</time><span class="prog-mark" aria-hidden="true"><i class="prog-node"></i></span><div class="prog-body"><h3>Blessings &amp; photographs</h3><p>With family, by the river.</p></div></li>
+        <li style="--mins:120"><time datetime="2027-01-10T12:30+05:30">12:30</time><span class="prog-mark" aria-hidden="true"><i class="prog-node"></i></span><div class="prog-body"><h3>Lunch</h3><p>Served on the lawn.</p></div></li>
+        <li><time datetime="2027-01-10T14:30+05:30">14:30</time><span class="prog-mark" aria-hidden="true"><i class="prog-node"></i></span><div class="prog-body"><h3>Farewell</h3><p>Concluding by three o’clock.</p></div></li>
+      </ol>
+      <span class="prog-rail" aria-hidden="true"></span>
+      <span class="prog-fill" aria-hidden="true"></span>
+      <span class="prog-bead" aria-hidden="true"></span>
+    </div>
   </div>
 </section>
 
@@ -2555,51 +2582,90 @@ function initDuo() {
 }
 
 /* =====================================================================
-   Programme: rows darken as you reach them. The rows hang as a chain: the first from the list by a spring,
-   each next one from the row above, all damped. When the page accelerates, every row feels the same
-   pseudo-force (−m·a), so the chain stretches and a wave runs down it.
+   Programme: the day as one thread. A bead (a mass on the rail) follows the reading line on a damped spring
+   and feels the page's pseudo-force −m·a, so it lags and swings when you flick the page; it stretches with
+   its speed (area kept). The rail behind it is inked; each node it passes fills and pops on its own spring.
+   On the wedding day itself (10:00–15:00 IST) the bead follows the clock instead of the scroll.
    ===================================================================== */
 function initProgramme() {
-  const list = Geometry.track($("programme-list"));
-  const items = [...list.querySelectorAll("li")];
-  let offsets = items.map((li) => li.offsetTop);
-  Geometry.onMeasure(() => { offsets = items.map((li) => li.offsetTop); });
-  const passed = items.map(() => false);
+  const panel = Geometry.track($("programme-list"));
+  const items = [...panel.querySelectorAll("li")];
+  const nodes = items.map((li) => li.querySelector(".prog-node"));
+  const times = items.map((li) => Date.parse(li.querySelector("time").getAttribute("datetime")));
+  const rail = panel.querySelector(".prog-rail"), fill = panel.querySelector(".prog-fill"), bead = panel.querySelector(".prog-bead");
   const n = items.length;
-  const y = new Float64Array(n), v = new Float64Array(n);
-  const K_TOP = 520, K_LINK = 300, K_SELF = 40, DAMP = 9, GAIN = 0.06;
-  const last = items.map(() => "");
-  let resting = true;
-  const vis = visibility(list, "300px");
+  let ys = nodes.map(() => 0), x = 0, span = 1;
+  // node centres in the panel's own coordinates (layout reads happen here, never in the frame loop)
+  const measure = () => {
+    ys = nodes.map((node) => node.offsetTop + node.offsetHeight / 2);
+    x = nodes[0].offsetLeft + nodes[0].offsetWidth / 2;
+    span = Math.max(1, ys[n - 1] - ys[0]);
+    for (const el of [rail, fill]) { el.style.left = `${x}px`; el.style.top = `${ys[0]}px`; el.style.height = `${span}px`; }
+    lastFill = lastBead = "";
+  };
+  let lastFill = "", lastBead = "";
+  new ResizeObserver(measure).observe(panel);
+  measure();
+
+  const K = 95, C = 2 * Math.sqrt(K) * 0.55, GAIN = 0.045;
+  const bob = { y: ys[0], v: 0 };
+  const passed = items.map(() => false);
+  const pops = nodes.map(() => new Spring(1, 340, 13));
+  const popLast = nodes.map(() => "");
+  const vis = visibility(panel, "200px");
+
+  /** On the day: where the clock is along the rail (px), or null outside the 10:00–15:00 window. */
+  const clockPosition = () => {
+    const now = Date.now();
+    if (now < WEDDING_START.getTime() || now > WEDDING_END.getTime()) return null;
+    if (now < times[0]) return ys[0] - 1;
+    for (let i = 0; i < n - 1; i++) if (now < times[i + 1]) return ys[i] + (ys[i + 1] - ys[i]) * (now - times[i]) / (times[i + 1] - times[i]);
+    return ys[n - 1];
+  };
+
   Ticker.add({
     active: () => vis.visible,
     write(dt) {
-      const r = Geometry.get(list);
-      if (r) {
-        const mark = Frame.scrollY + Frame.vh * 0.62;
-        items.forEach((li, i) => {
-          const is = r.top + offsets[i] < mark;
-          if (is !== passed[i]) { li.classList.toggle("is-passed", is); passed[i] = is; }
-        });
-      }
-      if (REDUCED) return;
-      const force = clamp(Frame.scrollAccel, -8000, 8000) * GAIN;
-      if (resting && Math.abs(force) < 2) return;
-      const steps = Math.max(1, Math.ceil(dt / SPRING_STEP)), h = dt / steps;
-      for (let s = 0; s < steps; s++) {
-        for (let i = 0; i < n; i++) {
-          const above = i === 0 ? -K_TOP * y[0] : -K_LINK * (y[i] - y[i - 1]);
-          const below = i === n - 1 ? 0 : K_LINK * (y[i + 1] - y[i]);
-          v[i] += (above + below - K_SELF * y[i] - DAMP * v[i] + force) * h;
-        }
-        for (let i = 0; i < n; i++) y[i] += v[i] * h;
-      }
-      resting = Math.abs(force) < 2 && y.every((yi, i) => Math.abs(yi) < 0.05 && Math.abs(v[i]) < 0.5);
+      const r = Geometry.get(panel);
+      if (!r) return;
+      const onTheDay = clockPosition();
+      const reading = onTheDay !== null ? onTheDay : Frame.scrollY + Frame.vh * 0.62 - r.top;
+      const goal = clamp(reading, ys[0], ys[n - 1]);
+
+      // each node it reaches is inked, with a little pop
       for (let i = 0; i < n; i++) {
-        const t = resting ? "" : `translate3d(0, ${clamp(y[i], -70, 70).toFixed(2)}px, 0) rotateX(${clamp(-v[i] * 0.03, -10, 10).toFixed(2)}deg)`;
-        if (t !== last[i]) { items[i].style.transform = t; last[i] = t; }
+        const is = reading >= ys[i];
+        if (is === passed[i]) continue;
+        passed[i] = is;
+        items[i].classList.toggle("is-passed", is);
+        if (is && !REDUCED) pops[i].velocity += 9;
       }
-      if (resting) { y.fill(0); v.fill(0); }
+
+      if (REDUCED) { bob.y = goal; bob.v = 0; }
+      else {
+        const force = clamp(Frame.scrollAccel, -8000, 8000) * GAIN;
+        const steps = Math.max(1, Math.ceil(dt / SPRING_STEP)), h = dt / steps;
+        for (let s = 0; s < steps; s++) {
+          bob.v += (K * (goal - bob.y) - C * bob.v + force) * h;
+          bob.y += bob.v * h;
+        }
+        bob.y = clamp(bob.y, ys[0] - 24, ys[n - 1] + 24);
+      }
+
+      const stretch = REDUCED ? 0 : clamp(Math.abs(bob.v) / 2400, 0, 0.32);
+      const t = `translate3d(${x.toFixed(1)}px, ${bob.y.toFixed(1)}px, 0) scale(${(1 / (1 + stretch)).toFixed(3)}, ${(1 + stretch).toFixed(3)})`;
+      if (t !== lastBead) { bead.style.transform = t; lastBead = t; }
+      const f = `scaleY(${clamp((bob.y - ys[0]) / span, 0, 1).toFixed(4)})`;
+      if (f !== lastFill) { fill.style.transform = f; lastFill = f; }
+
+      for (let i = 0; i < n; i++) {
+        const p = pops[i];
+        if (p.settled && popLast[i] === "") continue;
+        p.step(dt);
+        const pt = p.settled ? "" : `scale(${p.value.toFixed(3)})`;
+        if (p.settled) p.snap();
+        if (pt !== popLast[i]) { nodes[i].style.transform = pt; popLast[i] = pt; }
+      }
     },
   });
 }
