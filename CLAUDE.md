@@ -92,7 +92,8 @@ Loading screen (glass bubble fills with water to 100%, then drains away) → flo
 - Malayalam lines: "വിവാഹം" and "നിങ്ങളെ സ്നേഹപൂർവ്വം ക്ഷണിക്കുന്നു" — the couple can confirm wording.
 - No RSVP (the couple removed it on purpose).
 - Photos: `hero-bamboo.jpg` (hero orb), `sreejith-bw.jpg`, `jestina-bw.jpg`, `together-bw.jpg` (couple section; the bouquet photo since 20 Nov),
-  `roll-01..05.jpg` + `closing.jpg` (photo table / finale). Sources are ~720×960; don't display them much larger than that.
+  `roll-01..05.jpg`, `closing.jpg` (Nº 06) and `roll-07..11.jpg` (photo table, 11 prints; `closing.jpg` is also the finale). Sources are ~720×960
+  (`roll-11.jpg` is only 439×525); don't display them much larger than that. The table fits 11 prints: 6 across on desktop, 3 across on phones.
 
 ## Performance rules (the couple asked for "smooth", keep it that way)
 

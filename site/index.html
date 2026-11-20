@@ -336,9 +336,10 @@ button.hero-hint { border: 0; background: none; padding: 8px 0; cursor: pointer;
 .table-actions { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
 .table-actions p { color: var(--ink-soft); font-size: 15.5px; }
 .desk { position: relative; height: clamp(560px, 76vh, 760px); overflow: hidden; touch-action: pan-y; }
+@media (max-width: 600px) { .desk { height: clamp(700px, 88svh, 800px); } .desk .print { --w: 26vw; } }
 .desk-prints { display: flex; flex-wrap: wrap; justify-content: center; gap: 18px; padding: 32px; }
 .print {
-  --w: clamp(116px, 16vw, 228px);
+  --w: clamp(100px, 12.5vw, 176px);
   width: var(--w); padding: 9px 9px 0; background: #FFFEFB; border: 0; border-radius: 6px; cursor: grab;
   --lift: 0;
   box-shadow: 0 1px 1px rgba(0,0,0,.08), 0 calc(14px + var(--lift) * 30px) calc(28px + var(--lift) * 40px) calc(-12px - var(--lift) * 6px) rgba(0,0,0,calc(.32 + var(--lift) * .12));
@@ -578,6 +579,11 @@ footer { padding-block: 24px 40px; }
         <button class="print" type="button" data-full="photos/roll-04.jpg"><img src="photos/roll-04.jpg" alt="Jestina and Sreejith holding bouquets" width="639" height="959" loading="lazy"><span><b>Nº 04</b><em>Bouquets</em></span></button>
         <button class="print" type="button" data-full="photos/roll-05.jpg"><img src="photos/roll-05.jpg" alt="Sreejith and Jestina posing playfully" width="540" height="959" loading="lazy"><span><b>Nº 05</b><em>Mischief</em></span></button>
         <button class="print" type="button" data-full="photos/closing.jpg"><img src="photos/closing.jpg" alt="Sreejith and Jestina in traditional clothes, smiling at each other" width="719" height="959" loading="lazy"><span><b>Nº 06</b><em>Kasavu</em></span></button>
+        <button class="print" type="button" data-full="photos/roll-07.jpg"><img src="photos/roll-07.jpg" alt="Sreejith and Jestina with their heads together, smiling at the camera" width="719" height="959" loading="lazy"><span><b>Nº 07</b><em>Side by side</em></span></button>
+        <button class="print" type="button" data-full="photos/roll-08.jpg"><img src="photos/roll-08.jpg" alt="Sreejith and Jestina standing together with misty hills behind them" width="539" height="959" loading="lazy"><span><b>Nº 08</b><em>Misty hills</em></span></button>
+        <button class="print" type="button" data-full="photos/roll-09.jpg"><img src="photos/roll-09.jpg" alt="Sreejith and Jestina taking a mirror selfie together" width="722" height="959" loading="lazy"><span><b>Nº 09</b><em>Mirror</em></span></button>
+        <button class="print" type="button" data-full="photos/roll-10.jpg"><img src="photos/roll-10.jpg" alt="Sreejith and Jestina taking a selfie on a lawn, Jestina in a red and black saree" width="719" height="959" loading="lazy"><span><b>Nº 10</b><em>On the lawn</em></span></button>
+        <button class="print" type="button" data-full="photos/roll-11.jpg"><img src="photos/roll-11.jpg" alt="Jestina resting her chin on her hand beside a smiling Sreejith" width="439" height="525" loading="lazy"><span><b>Nº 11</b><em>Snapshot</em></span></button>
       </div>
     </div>
   </div>
@@ -2481,15 +2487,17 @@ function initDesk(openLightbox) {
     const { w: W, h: H } = size;
     const rand = seeded(7);
     const { w, h } = items[0];
-    const cols = clamp(Math.floor(W / (w * 1.18)), 2, items.length);
+    const cols = clamp(Math.floor(W / (w * 1.06)), 2, items.length);
     const rows = Math.ceil(items.length / cols);
     const cellW = W / cols, cellH = H / rows;
+    // a tilted print is wider than an upright one: tilt only as far as the free space in its cell allows
+    const tilt = clamp(Math.min((cellW - w) / h, (cellH - h) / w), 0.04, 0.32);
     return items.map((it, i) => {
       const col = i % cols, row = Math.floor(i / cols);
       return {
-        x: clamp(cellW * (col + 0.5) + (rand() - 0.5) * Math.max(0, cellW - w) * 0.6, it.w / 2 + 8, W - it.w / 2 - 8),
+        x: clamp(cellW * (col + 0.5) + (rand() - 0.5) * Math.max(0, cellW - w) * 0.4, it.w / 2 + 8, W - it.w / 2 - 8),
         y: clamp(cellH * (row + 0.5) + (rand() - 0.5) * Math.max(0, cellH - h) * 0.6, it.h / 2 + 8, H - it.h / 2 - 8),
-        angle: (rand() - 0.5) * 0.32,
+        angle: (rand() - 0.5) * tilt,
       };
     });
   }
@@ -2568,7 +2576,10 @@ function initDesk(openLightbox) {
       Body.setVelocity(it.body, { x: (t.x - it.body.position.x) * friction * 1.02, y: (t.y - it.body.position.y) * friction * 1.02 });
       Body.setAngularVelocity(it.body, (t.angle - it.body.angle) * friction * 1.5);
       it.el.style.zIndex = String(++zTop);
+      // dealt prints slide over one another (same negative group never collides) until each has reached its spot
+      it.body.collisionFilter.group = -1;
     });
+    setTimeout(() => items.forEach((it) => { it.body.collisionFilter.group = 0; }), 1800);
   }
 
   new ResizeObserver(() => {
