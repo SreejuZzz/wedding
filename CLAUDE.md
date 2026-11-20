@@ -72,14 +72,19 @@ To test with an installed Chrome instead: `CHROME_PATH=/usr/bin/google-chrome np
   - One page-wide light follows the cursor: every visible `.glass` gets `--lx/--ly` (sheen and rim highlight) and `--sx/--sy` (shadow direction).
   - Springs (`class Spring`, Hooke + damping) drive: magnetic buttons, panel tilt, odometer digits, print lift, the QR card tilt, the hero letters
     (underdamped rise), the loader drops, the couple scene (each figure follows scroll progress through its own spring), the lightbox (the print flies to the
-    centre), in-page link scrolling (critically damped), the loader curtain.
+    centre), in-page link scrolling (critically damped).
   - `Frame.scrollAccel` (px/s²) is the page's acceleration; things riding on the page feel the pseudo-force −m·a:
     the programme rows hang as a coupled mass–spring chain, the orbs float (buoyancy oscillator + Ornstein–Uhlenbeck forcing), the marquee is a
     belt with mass whose shear is a spring driven by its acceleration.
   - Loader: two water drops (him and her) condense on either side (radius overshoots on a spring) and slide together on springs as loading
     progresses, each wobbling with `DropShape` modes; on contact they coalesce into one drop of summed area (R = √(r₁² + r₂²)) seeded with the
-    two-lobed shape (n = 2, n = 4 modes) that rings down for ~0.7 s; then the screen closes onto the drop (critically damped curtain) and the
-    drop draws itself in. Reduced motion: one still drop, removed as soon as loading finishes. No percentage or text beyond the names and date.
+    two-lobed shape (n = 2, n = 4 modes) that rings for ~0.45 s. **Hand-over to the hero:** the drop flies to the hero photo (`#hero-img`,
+    from `Geometry`) on a 2-D spring and swells to the photo’s radius, wobbling from its own acceleration; its inside is a window onto the real
+    page (the paper `.loader-sheet` gets `clip-path: path(evenodd, …)` with the drop’s outline as the hole), so it lands showing the photo.
+    Then the paper opens from the photo as a wave front (starts from rest, runs at constant speed, meniscus edge with shadow), a ring goes
+    into the water (`Water.ripple`), the drop’s shading fades on a spring and `is-ready` fires, so the names rise as the front uncovers them.
+    If the photo isn’t on screen the paper opens from where the drop is. Reduced motion: one still drop, removed as soon as loading finishes.
+    No percentage or text beyond the names and date.
   - Photo table: Matter.js rigid bodies seen from above (no gravity, table friction, collisions, throwing).
   - Petal shower: each petal is a falling plate (Andersen–Pesavento–Wang 2005 quasi-steady model: angle-of-attack drag, circulation lift,
     broadside torque, rotational damping), which flutters and tumbles by itself; drawn as a disc projected from its 3-D plane. The button blows
@@ -89,7 +94,7 @@ To test with an installed Chrome instead: `CHROME_PATH=/usr/bin/google-chrome np
 
 ## Page sections (top to bottom)
 
-Loading screen (two drops slide together and become one, then the screen closes into it) → floating glass nav (+ bottom dock on phones) → hero (names, liquid orb photo, facts bar)
+Loading screen (two drops slide together and become one, the drop flies into the hero photo and the paper opens from it) → floating glass nav (+ bottom dock on phones) → hero (names, liquid orb photo, facts bar)
 → velocity marquee → invitation + countdown + Add to calendar → "Him / Her / Us" pinned 3D scroll story ("Him" and "Her" ride above
   the groom and bride cards; they glide together, grow and dissolve completely into the "together" card, which carries "Us";
   all three use the same glass card frame)

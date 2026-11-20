@@ -134,16 +134,15 @@ section { scroll-margin-top: 96px; }
 }
 
 /* ---------- Loading screen ----------
-   Two drops of water, one from each side, slide together as the page loads and coalesce into one. */
+   Two drops of water, one from each side, slide together as the page loads and coalesce into one.
+   The drop then flies into the hero photo and the paper opens from it like a wave. */
 .loader { display: none; }
-.js .loader {
-  position: fixed; inset: 0; z-index: 200; display: grid; place-items: center;
-  background: var(--bg);
-}
+.js .loader { position: fixed; inset: 0; z-index: 200; display: block; }
 .loader.is-done { pointer-events: none; }
+.loader-sheet { position: absolute; inset: 0; display: grid; place-items: center; background: var(--bg); }
+.loader-drops { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
 .loader-inner { display: grid; justify-items: center; gap: 18px; text-align: center; }
 .loader-stage { width: min(380px, 88vw); height: 150px; }
-.loader-stage canvas { display: block; width: 100%; height: 100%; }
 .loader-names { font-family: var(--serif); font-size: clamp(34px, 5vw, 52px); line-height: 1; }
 .loader-names i { color: var(--black); }
 .loader-date { margin-top: -4px; }
@@ -402,11 +401,14 @@ footer { padding-block: 24px 40px; }
 <canvas id="petal-canvas" aria-hidden="true"></canvas>
 
 <div class="loader" id="loader" role="status" aria-live="polite" aria-label="Loading">
-  <div class="loader-inner">
-    <div class="loader-stage" aria-hidden="true"><canvas id="loader-drops"></canvas></div>
-    <p class="loader-names">Sreejith <i>&amp;</i> Jestina</p>
-    <p class="label loader-date">10 · 01 · 2027 · Enchanted Woods</p>
+  <div class="loader-sheet" id="loader-sheet">
+    <div class="loader-inner">
+      <div class="loader-stage" id="loader-stage"></div>
+      <p class="loader-names">Sreejith <i>&amp;</i> Jestina</p>
+      <p class="label loader-date">10 · 01 · 2027 · Enchanted Woods</p>
+    </div>
   </div>
+  <canvas class="loader-drops" id="loader-drops" aria-hidden="true"></canvas>
 </div>
 
 <nav class="nav" aria-label="Main">
@@ -1438,36 +1440,44 @@ function initFluid() {
  * Two drops condense out of nothing (their radius overshoots on surface tension), one on each side, and slide
  * toward each other on springs as the page loads; each wobbles with its own Rayleigh modes as it accelerates.
  * When they touch they coalesce: one drop with the summed area (R = √(r₁² + r₂²)) that starts as the
- * two-lobed shape (n = 2 and n = 4 modes of 2r·|cos θ|, plus the closing speed) and rings down at
- * ω_n ∝ √(n(n−1)(n+2)). Then the screen closes onto the drop as the drop draws itself in.
+ * two-lobed shape (n = 2 and n = 4 modes of 2r·|cos θ|, plus the closing speed) and rings at ω_n ∝ √(n(n−1)(n+2)).
+ * Then it becomes the hero photo: it flies to the orb on a spring (its acceleration sets it wobbling) and swells to
+ * the photo's size, its inside already a window onto the page. From the photo the paper opens as a wave front
+ * that starts from rest and runs out at a fixed speed, and the same ring goes out into the water.
  */
 function runLoader(tasks) {
-  const loader = $("loader"), canvas = $("loader-drops");
-  const MIN_MS = REDUCED ? 0 : 1400, MAX_MS = 7000, RING_MS = 700;
+  const loader = $("loader"), sheet = $("loader-sheet"), stage = $("loader-stage"), canvas = $("loader-drops");
+  const photo = $("hero-img");
+  const MIN_MS = REDUCED ? 0 : 1400, MAX_MS = 7000, RING_MS = 450, FLY_MAX_MS = 1100;
   const started = performance.now();
   let done = 0, finished = false;
   tasks.forEach((task) => Promise.resolve(task).catch(() => null).then(() => { done++; }));
+  Geometry.track(photo);
 
   const ctx = canvas.getContext("2d");
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  let W = 0, H = 0, r = 0, centre = { x: 0, y: 0 };
+  let VW = 0, VH = 0, W = 0, r = 0, home = { x: 0, y: 0 };
   const measure = () => {
-    const box = canvas.getBoundingClientRect();
-    W = box.width || 320; H = box.height || 150;
-    canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
+    VW = window.innerWidth; VH = window.innerHeight;
+    canvas.width = Math.round(VW * dpr); canvas.height = Math.round(VH * dpr);
+    const box = stage.getBoundingClientRect();
+    W = box.width || 320;
     r = clamp(W * 0.082, 22, 32);
-    centre = { x: box.left + W / 2, y: box.top + H / 2 };
+    home = { x: box.left + W / 2, y: box.top + box.height / 2 };
   };
   measure();
   window.addEventListener("resize", measure);
 
   // the two drops: x is measured from the middle of the stage
   const SLIDE_K = 38, SLIDE_C = 2 * Math.sqrt(38) * 0.86;
+  const FLY_K = 30, FLY_C = 2 * Math.sqrt(30) * 0.74;
   const drops = [-1, 1].map((side) => ({ side, x: side * (W / 2 - r * 1.6), v: 0, size: new Spring(0, 240, 15), shape: new DropShape() }));
-  let merged = null, mergedAt = 0;
+  let phase = "gather", merged = null, phaseAt = 0, target = null;
+  const front = { r: 0, v: 0, speed: 0, x: 0, y: 0, end: 0 };
+  const optics = new Spring(1, 70, 2 * Math.sqrt(70));
+  let lastClip = "";
   // without motion: one still drop
-  if (REDUCED) merged = { x: 0, size: new Spring(Math.SQRT2 * r, 0, 0), shape: new DropShape() };
-  const clip = new Spring(0, 30, 2 * Math.sqrt(30));
+  if (REDUCED) merged = { x: home.x, y: home.y, vx: 0, vy: 0, size: new Spring(Math.SQRT2 * r, 0, 0), shape: new DropShape() };
 
   function slide(dt, p) {
     const reach = r * 0.85 + Math.max(0, W / 2 - r * 2.45) * (1 - p); // centre's distance from the middle
@@ -1492,48 +1502,101 @@ function runLoader(tasks) {
     const [m2, , m4] = shape.modes;
     m2.c = 0.66; m4.c = -0.13;                 // two touching circles, seen from the new centre
     m2.vc = (b.v - a.v) / (2 * R);             // still closing: the long axis keeps shrinking
-    merged = { x: (a.x + b.x) / 2, size: new Spring(R, 140, 2 * Math.sqrt(140) * 0.9), shape };
-    mergedAt = performance.now();
+    merged = { x: home.x + (a.x + b.x) / 2, y: home.y, vx: 0, vy: 0, size: new Spring(R, 140, 2 * Math.sqrt(140) * 0.9), shape };
+    phase = "ring"; phaseAt = performance.now();
   }
+
+  /** Where the hero photo is on screen (from cached geometry), or null if it isn't on screen. */
+  function photoOnScreen() {
+    const g = Geometry.get(photo);
+    if (!g || !g.width) return null;
+    const x = g.left - Frame.scrollX + g.width / 2, y = g.top - Frame.scrollY + g.height / 2;
+    if (y + g.height / 2 < 0 || y - g.height / 2 > VH) return null;
+    return { x, y, r: g.width / 2 };
+  }
+
+  function fly(dt) {
+    const m = merged;
+    const n = Math.max(1, Math.ceil(dt / SPRING_STEP)), h = dt / n;
+    let axSum = 0, aySum = 0;
+    for (let i = 0; i < n; i++) {
+      const ax = FLY_K * (target.x - m.x) - FLY_C * m.vx, ay = FLY_K * (target.y - m.y) - FLY_C * m.vy;
+      m.vx += ax * h; m.vy += ay * h; m.x += m.vx * h; m.y += m.vy * h;
+      axSum += ax; aySum += ay;
+    }
+    m.size.step(dt);
+    m.shape.step(dt, Math.max(m.size.value, 4), axSum / n, aySum / n);
+    // arrived: the wobble can finish while the paper opens
+    const there = Math.hypot(target.x - m.x, target.y - m.y) < 6 && Math.hypot(m.vx, m.vy) < 140 && Math.abs(target.r - m.size.value) < 5;
+    if (there || performance.now() - phaseAt > FLY_MAX_MS) open();
+  }
+
+  function open() {
+    phase = "open"; phaseAt = performance.now();
+    front.x = merged.x; front.y = merged.y;
+    front.r = holeOf(merged.size.value); front.v = 0;
+    front.speed = Math.max(VW, VH) * 1.6;
+    front.end = Math.hypot(Math.max(front.x, VW - front.x), Math.max(front.y, VH - front.y)) + 40;
+    optics.target = 0;
+    Water.ripple(front.x, front.y, -0.2, 22, merged.size.value);
+    finish();
+  }
+
+  // the window through the drop sits just inside its refracting rim
+  const holeOf = (R) => Math.max(0, R * 0.9 - 1);
+
+  /** Cuts a hole of the given outline (an SVG path) out of the paper. */
+  function setHole(hole) {
+    const value = hole ? `path(evenodd, "M0 0H${VW}V${VH}H0Z${hole}")` : "";
+    if (value === lastClip) return;
+    lastClip = value;
+    sheet.style.clipPath = value;
+  }
+  const circlePath = (x, y, R) => `M${(x - R).toFixed(1)} ${y.toFixed(1)}a${R.toFixed(1)} ${R.toFixed(1)} 0 1 0 ${(2 * R).toFixed(1)} 0a${R.toFixed(1)} ${R.toFixed(1)} 0 1 0 ${(-2 * R).toFixed(1)} 0Z`;
 
   function paintDrop(pts, cx, cy, R) {
     const L = DROP.light;
-    // shadow cast away from the light, and the caustic the drop focuses into it
+    // a big drop is a lens: its shadow, rim and highlights stay near the edge instead of growing with it
+    const lift = Math.min(R * 0.3, 9), rim = Math.min(R * 0.25, 9), band = Math.min(R * 0.42, 14), off = Math.min(R * 0.32, 10);
+    const spec = Math.min(R * 0.28, 10), specAt = R - Math.min(R * 0.45, 18), glintAt = R - Math.min(R * 0.3, 11);
+    const onPaper = phase === "gather" || phase === "ring";
+    // shadow cast away from the light, and (on the paper) the caustic the drop focuses into it
     ctx.save();
-    ctx.translate(-L.x * R * 0.3, -L.y * R * 0.3);
+    ctx.translate(-L.x * lift, -L.y * lift);
     traceOutline(ctx, pts);
     let g = ctx.createRadialGradient(cx, cy, R * 0.1, cx, cy, R * 1.1);
     g.addColorStop(0, "rgba(0,0,0,0.04)"); g.addColorStop(0.72, "rgba(0,0,0,0.13)"); g.addColorStop(1, "rgba(0,0,0,0.03)");
     ctx.fillStyle = g; ctx.fill();
     ctx.restore();
-    const kx = cx - L.x * R * 0.42, ky = cy - L.y * R * 0.42;
-    g = ctx.createRadialGradient(kx, ky, 0, kx, ky, R * 0.42);
-    g.addColorStop(0, "rgba(255,255,255,0.9)"); g.addColorStop(1, "rgba(255,255,255,0)");
-    ctx.fillStyle = g; ctx.fillRect(kx - R, ky - R, R * 2, R * 2);
+    if (onPaper) {
+      const kx = cx - L.x * R * 0.42, ky = cy - L.y * R * 0.42;
+      g = ctx.createRadialGradient(kx, ky, 0, kx, ky, R * 0.42);
+      g.addColorStop(0, "rgba(255,255,255,0.9)"); g.addColorStop(1, "rgba(255,255,255,0)");
+      ctx.fillStyle = g; ctx.fillRect(kx - R, ky - R, R * 2, R * 2);
+    }
     // the water: dark refracting rim, bright crescent opposite the light, specular window and glint
     ctx.save();
     traceOutline(ctx, pts);
     ctx.clip();
-    ctx.fillStyle = "rgba(255,255,255,0.28)";
-    ctx.fillRect(cx - R * 2, cy - R * 2, R * 4, R * 4);
-    g = ctx.createRadialGradient(cx, cy, R * 0.45, cx, cy, R * 1.08);
+    if (onPaper) { ctx.fillStyle = "rgba(255,255,255,0.28)"; ctx.fillRect(cx - R * 2, cy - R * 2, R * 4, R * 4); }
+    g = ctx.createRadialGradient(cx, cy, Math.max(0, R - rim * 2.2), cx, cy, R * 1.08);
     g.addColorStop(0, "rgba(0,0,0,0)"); g.addColorStop(0.7, "rgba(0,0,0,0.05)"); g.addColorStop(0.9, "rgba(0,0,0,0.24)"); g.addColorStop(1, "rgba(0,0,0,0.5)");
     ctx.fillStyle = g; ctx.fillRect(cx - R * 2, cy - R * 2, R * 4, R * 4);
-    const sx = cx + L.x * R * 0.32, sy = cy + L.y * R * 0.32;
-    g = ctx.createRadialGradient(sx, sy, R * 0.9, sx, sy, R * 1.32);
-    g.addColorStop(0, "rgba(255,255,255,0)"); g.addColorStop(0.55, "rgba(255,255,255,0.6)"); g.addColorStop(1, "rgba(255,255,255,0)");
+    const sx = cx + L.x * off, sy = cy + L.y * off;
+    g = ctx.createRadialGradient(sx, sy, R + off - band, sx, sy, R + off + 2);
+    g.addColorStop(0, "rgba(255,255,255,0)"); g.addColorStop(0.7, "rgba(255,255,255,0.6)"); g.addColorStop(1, "rgba(255,255,255,0)");
     ctx.fillStyle = g; ctx.fillRect(cx - R * 2, cy - R * 2, R * 4, R * 4);
     ctx.save();
-    ctx.translate(cx + L.x * R * 0.55, cy + L.y * R * 0.55);
+    ctx.translate(cx + L.x * specAt, cy + L.y * specAt);
     ctx.rotate(Math.atan2(L.y, L.x) + Math.PI / 2);
     ctx.scale(1, 0.5);
-    g = ctx.createRadialGradient(0, 0, 0, 0, 0, R * 0.28);
+    g = ctx.createRadialGradient(0, 0, 0, 0, 0, spec);
     g.addColorStop(0, "rgba(255,255,255,0.95)"); g.addColorStop(0.55, "rgba(255,255,255,0.55)"); g.addColorStop(1, "rgba(255,255,255,0)");
     ctx.fillStyle = g;
-    ctx.beginPath(); ctx.arc(0, 0, R * 0.28, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(0, 0, spec, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
     ctx.fillStyle = "#fff";
-    ctx.beginPath(); ctx.arc(cx + L.x * R * 0.7, cy + L.y * R * 0.7, Math.max(1, R * 0.05), 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx + L.x * glintAt, cy + L.y * glintAt, Math.max(1, Math.min(R * 0.05, 2)), 0, Math.PI * 2); ctx.fill();
     ctx.restore();
     traceOutline(ctx, pts);
     g = ctx.createLinearGradient(cx + L.x * R, cy + L.y * R, cx - L.x * R, cy - L.y * R);
@@ -1541,55 +1604,92 @@ function runLoader(tasks) {
     ctx.strokeStyle = g; ctx.lineWidth = 1; ctx.stroke();
   }
 
+  /** The edge of the opening paper: a meniscus that throws a soft shadow onto the paper and lights its inner lip. */
+  function paintFront() {
+    const { x, y, r: R } = front, L = DROP.light;
+    let g = ctx.createRadialGradient(x, y, R, x, y, R + 22);
+    g.addColorStop(0, "rgba(0,0,0,0.14)"); g.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(x, y, R + 22, 0, Math.PI * 2); ctx.arc(x, y, R, 0, Math.PI * 2, true); ctx.fill();
+    g = ctx.createRadialGradient(x, y, Math.max(0, R - 14), x, y, R);
+    g.addColorStop(0, "rgba(255,255,255,0)"); g.addColorStop(1, "rgba(255,255,255,0.45)");
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(x, y, R, 0, Math.PI * 2); ctx.arc(x, y, Math.max(0, R - 14), 0, Math.PI * 2, true); ctx.fill();
+    g = ctx.createLinearGradient(x + L.x * R, y + L.y * R, x - L.x * R, y - L.y * R);
+    g.addColorStop(0, "rgba(255,255,255,0.95)"); g.addColorStop(0.5, "rgba(0,0,0,0.12)"); g.addColorStop(1, "rgba(0,0,0,0.3)");
+    ctx.strokeStyle = g; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.arc(x, y, R, 0, Math.PI * 2); ctx.stroke();
+  }
+
   function draw() {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, W, H);
-    const mid = W / 2, y = H / 2;
-    const list = merged ? [merged] : drops;
-    for (const d of list) {
-      const R = d.size.value;
-      if (R < 0.5) continue;
-      paintDrop(d.shape.outline(mid + d.x, y, R), mid + d.x, y, R);
+    ctx.clearRect(0, 0, VW, VH);
+    if (phase === "open") paintFront();
+    if (phase === "gather") {
+      for (const d of drops) {
+        const R = d.size.value;
+        if (R >= 0.5) paintDrop(d.shape.outline(home.x + d.x, home.y, R), home.x + d.x, home.y, R);
+      }
+    } else if (merged && optics.value > 0.01) {
+      const R = merged.size.value;
+      ctx.globalAlpha = clamp(optics.value, 0, 1);
+      paintDrop(merged.shape.outline(merged.x, merged.y, R), merged.x, merged.y, R);
+      ctx.globalAlpha = 1;
     }
   }
 
-  return new Promise((resolve) => {
-    const finish = () => {
-      if (finished) return;
-      finished = true;
-      loader.classList.add("is-done");
-      document.body.classList.add("is-ready");
-      Page.ready = true;
-      resolve();
-      if (REDUCED) { loader.remove(); return; }
-      clip.value = clip.target = Math.hypot(window.innerWidth, window.innerHeight);
-      clip.target = 0;
-    };
-    const job = Ticker.add({
-      write(dt, now) {
-        const elapsed = now - started;
-        const p = elapsed > MAX_MS ? 1 : Math.min(done / tasks.length, MIN_MS ? Math.min(1, elapsed / MIN_MS) : 1);
-        if (REDUCED) {
-          draw();
-          if (p >= 1) { finish(); job.done = true; }
-          return;
-        }
-        if (!merged) slide(dt, p);
-        else { merged.size.step(dt); merged.shape.step(dt, Math.max(merged.size.value, 4), 0, 0); }
+  const finish = () => {
+    if (finished) return;
+    finished = true;
+    loader.classList.add("is-done");
+    document.body.classList.add("is-ready");
+    Page.ready = true;
+    resolveReady();
+  };
+  let resolveReady;
+  const ready = new Promise((resolve) => { resolveReady = resolve; });
+  const end = () => { loader.remove(); window.removeEventListener("resize", measure); job.done = true; };
+
+  const job = Ticker.add({
+    write(dt, now) {
+      const elapsed = now - started;
+      const p = elapsed > MAX_MS ? 1 : Math.min(done / tasks.length, MIN_MS ? Math.min(1, elapsed / MIN_MS) : 1);
+      if (REDUCED) {
         draw();
-        if (merged && !finished && now - mergedAt >= RING_MS) finish();
-        if (finished) {
-          // the screen closes onto the drop while the drop draws itself in
-          // once the edge reaches the drop, the drop draws itself in too
-          if (clip.value < merged.size.value * 4) merged.size.target = 0;
-          const R = Math.max(0, merged.size.value);
-          const radius = Math.max(clip.step(dt), R * 1.6 + 10 * Math.min(1, R / 8));
-          loader.style.clipPath = `circle(${radius.toFixed(1)}px at ${centre.x.toFixed(1)}px ${centre.y.toFixed(1)}px)`;
-          if (clip.value < 1 && R < 0.5) { loader.remove(); window.removeEventListener("resize", measure); job.done = true; }
+        if (p >= 1) { finish(); end(); }
+        return;
+      }
+      if (phase === "gather") slide(dt, p);
+      else if (phase === "ring") {
+        merged.size.step(dt); merged.shape.step(dt, Math.max(merged.size.value, 4), 0, 0);
+        if (now - phaseAt >= RING_MS) {
+          target = photoOnScreen();
+          if (!target) open();
+          else {
+            phase = "fly"; phaseAt = now;
+            merged.size.k = 34; merged.size.c = 2 * Math.sqrt(34) * 0.8; merged.size.target = target.r;
+          }
         }
-      },
-    });
+      } else if (phase === "fly") {
+        const t = photoOnScreen();
+        if (t) target = t;   // follow the photo if the layout shifts (fonts, scrolling)
+        fly(dt);
+        // the window has the drop's own (wobbling) outline
+        const R = merged.size.value;
+        setHole(R > 2 ? smoothPath(merged.shape.outline(merged.x, merged.y, holeOf(R))) : "");
+      } else if (phase === "open") {
+        // the front starts from rest and runs out at a constant wave speed
+        const n = Math.max(1, Math.ceil(dt / SPRING_STEP)), h = dt / n;
+        for (let i = 0; i < n; i++) { front.v += (front.speed - front.v) * 9 * h; front.r += front.v * h; }
+        optics.step(dt);
+        merged.shape.step(dt, Math.max(merged.size.value, 4), 0, 0);
+        setHole(circlePath(front.x, front.y, front.r));
+        if (front.r > front.end) { end(); return; }
+      }
+      draw();
+    },
   });
+  return ready;
 }
 
 function imageLoaded(img) {
