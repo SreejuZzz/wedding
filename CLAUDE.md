@@ -101,13 +101,14 @@ Loading screen (two drops slide together and become one, the drop flies into the
 → velocity marquee → invitation + countdown + Add to calendar → "Him / Her / Us" pinned 3D scroll story ("Him" and "Her" ride above
   the groom and bride cards; they glide together, grow and dissolve completely into the "together" card, which carries "Us";
   all three use the same glass card frame)
-→ programme → "A table of prints" (Matter.js) → venue + tilting QR card → finale with "Shower your blessings" → footer.
+→ programme → "A table of prints" (Matter.js) → venue (name, map button, tilting QR card) → finale with "Shower your blessings" → footer.
 
 ## Content status / open items
 
 - **Programme times are placeholders** (10:00 arrival, 10:30 ceremony, 11:30 blessings & photographs, 12:30 lunch, 14:30 farewell).
   Only the 10:00–15:00 window is confirmed. Ask the couple for the real schedule.
-- Travel distances (airport and Angamaly station, ~15 km each) come from Wikipedia's Thottuva page; the couple asked to keep them.
+- Venue section shows only the name, “Open in Google Maps” and the QR card (the couple removed the description, address, phone,
+  travel distances, parking, website and “Copy address” on 20 Nov). Address and phone stay in this file for reference only.
 - Malayalam lines: "വിവാഹം" and "നിങ്ങളെ സ്നേഹപൂർവ്വം ക്ഷണിക്കുന്നു" — the couple can confirm wording.
 - No RSVP (the couple removed it on purpose).
 - Photos: `hero-bamboo.jpg` (hero orb), `sreejith-bw.jpg`, `jestina-bw.jpg`, `together-bw.jpg` (couple section; the bouquet photo since 20 Nov),

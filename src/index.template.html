@@ -232,8 +232,9 @@ section { scroll-margin-top: 96px; }
 .fact + .fact { border-left: 1px solid var(--line); }
 .fact b { font: 400 clamp(19px, 1.6vw, 23px)/1.25 var(--serif); }
 .facts-bar .btn { margin: 6px; }
-.hero-hint { display: flex; justify-content: flex-end; margin-top: 18px; color: var(--ink-mute); font-size: 14px; }
+.hero-hint { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-top: 18px; color: var(--ink-mute); font-size: 14px; }
 button.hero-hint { border: 0; background: none; padding: 8px 0; cursor: pointer; text-decoration: underline; text-underline-offset: 4px; text-decoration-color: rgba(0,0,0,.3); }
+.hero-hint i { flex: none; width: 10px; height: 10px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff, rgba(0,0,0,.35)); box-shadow: 0 2px 4px rgba(0,0,0,.25); }
 @media (max-width: 900px) {
   .hero { padding-top: 104px; }
   .hero-grid { grid-template-columns: 1fr; }
@@ -352,13 +353,7 @@ button.hero-hint { border: 0; background: none; padding: 8px 0; cursor: pointer;
 .venue-copy { display: grid; gap: 26px; }
 .venue-name { font: 400 clamp(60px, 7.6vw, 118px)/.95 var(--serif); letter-spacing: -0.02em; }
 .venue-name em { color: var(--black); }
-.venue-lede { font-size: 18px; color: var(--ink-soft); max-width: 46ch; }
-.venue-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 32px; border-top: 1px solid var(--line); }
-.venue-facts div { display: grid; gap: 4px; padding-block: 16px; border-bottom: 1px solid var(--line); }
-.venue-facts dd { font: 400 20px/1.35 var(--serif); }
-.venue-facts a { text-underline-offset: 4px; text-decoration-color: rgba(24,32,27,.3); }
 .venue-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
-.copy-status { font-size: 15px; color: var(--black); min-height: 1.5em; margin-top: -10px; }
 .tilt-wrap { perspective: 1100px; display: grid; justify-items: center; }
 .qr-card {
   --gx: 50%; --gy: 50%; --glare: 0;
@@ -372,7 +367,6 @@ button.hero-hint { border: 0; background: none; padding: 8px 0; cursor: pointer;
 .qr svg { width: 100%; height: 100%; display: block; }
 .qr-title { font: italic 400 30px/1.1 var(--serif); transform: translateZ(22px); }
 @media (max-width: 900px) { .venue-panel { grid-template-columns: 1fr; } }
-@media (max-width: 520px) { .venue-facts { grid-template-columns: 1fr; } }
 
 /* ---------- Finale ---------- */
 .finale-panel { display: grid; grid-template-columns: 5fr 7fr; gap: clamp(32px, 6vw, 96px); align-items: center; padding: clamp(28px, 5vw, 72px); }
@@ -578,20 +572,9 @@ footer { padding-block: 24px 40px; }
       <div class="venue-copy">
         <p class="label">The venue</p>
         <h2 class="venue-name" id="venue-title">Enchanted <em>Woods</em></h2>
-        <p class="venue-lede">A private resort in a bamboo and teak forest, overlooking the river at Thottuva, near Perumbavoor.</p>
-        <dl class="venue-facts">
-          <div><dt class="label">Address</dt><dd>Koovappady P.O., Thottuva<br>Perumbavoor 683544, Kerala</dd></div>
-          <div><dt class="label">Resort</dt><dd><a href="tel:+918921829424">+91 89218 29424</a></dd></div>
-          <div><dt class="label">By air</dt><dd>Cochin International Airport, about 15 km</dd></div>
-          <div><dt class="label">By rail</dt><dd>Angamaly station, about 15 km</dd></div>
-          <div><dt class="label">Parking</dt><dd>On site, for up to 100 cars</dd></div>
-          <div><dt class="label">Website</dt><dd><a href="https://enchantedwoodsresort.in/">enchantedwoodsresort.in</a></dd></div>
-        </dl>
         <div class="venue-actions">
           <a class="btn btn-ink magnetic" href="{{MAPS_URL}}">Open in Google Maps <span class="arrow" aria-hidden="true">→</span></a>
-          <button class="btn btn-glass" type="button" id="copy-address">Copy address</button>
         </div>
-        <p class="copy-status" id="copy-status" aria-live="polite"></p>
       </div>
       <div class="tilt-wrap">
         <a class="qr-card" id="qr-card" href="{{MAPS_URL}}" aria-label="Open directions to Enchanted Woods in Google Maps">
@@ -650,7 +633,6 @@ footer { padding-block: 24px 40px; }
    ===================================================================== */
 const WEDDING_START = new Date("2027-01-10T10:00:00+05:30");
 const WEDDING_END = new Date("2027-01-10T15:00:00+05:30");
-const VENUE_ADDRESS = "Enchanted Woods, Koovappady P.O., Thottuva, Perumbavoor 683544, Kerala";
 const REDUCED = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const FINE_POINTER = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
 
@@ -3091,14 +3073,6 @@ function initHint() {
   }, 1200);
 }
 
-function initCopyAddress() {
-  $("copy-address").addEventListener("click", async () => {
-    const status = $("copy-status");
-    try { await navigator.clipboard.writeText(VENUE_ADDRESS); status.textContent = "Address copied."; }
-    catch (error) { status.textContent = "Copying isn’t available here. Select the address above to copy it."; }
-  });
-}
-
 /* =====================================================================
    Boot
    ===================================================================== */
@@ -3122,7 +3096,6 @@ guard("programme", initProgramme);
 const openLightbox = guard("lightbox", initLightbox) || (() => {});
 guard("desk", () => initDesk(openLightbox));
 guard("tilt", initTilt);
-guard("copy", initCopyAddress);
 guard("anchor-scroll", initAnchorScroll);
 const burst = guard("petals", initPetals) || (() => {});
 $("bless-btn").addEventListener("click", (e) => {
