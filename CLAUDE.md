@@ -35,7 +35,7 @@ To test with an installed Chrome instead: `CHROME_PATH=/usr/bin/google-chrome np
 - **Light-mode liquid glass floating on water.** Frosted glass panels (`.glass`) over a full-screen watercolour fluid simulation.
 - **Accents are pure black and white only.** Buttons are solid black, inverting to white with a black ring on hover; countdown tiles black;
   programme rows turn black as you reach them. Colour comes from the water (greens and oranges), the photos and the petals.
-- **Typography:** Instrument Serif (display), Geist (UI/body, tabular figures for the loader %), Manjari (Malayalam, subset to the page's own text). Loaded from Google Fonts.
+- **Typography:** Instrument Serif (display), Geist (UI/body), Manjari (Malayalam, subset to the page's own text). Loaded from Google Fonts.
 - **Readability rules:** dark ink on milky glass; body ≥ 16px; labels ≥ 12.5px; never dim text for effect; never put text on top of photos.
   Glass fill never goes below 64% white: that keeps `--ink-mute` (#404040) at ≥ 4.5:1 even over the darkest paint.
 - **Liquid glass is real refraction** wherever the GPU hand-off is cheap (phones included): `initGlass` gives each large panel
@@ -71,13 +71,15 @@ To test with an installed Chrome instead: `CHROME_PATH=/usr/bin/google-chrome np
     bright transmitted crescent opposite the light, shadow cast away from the light with a caustic.
   - One page-wide light follows the cursor: every visible `.glass` gets `--lx/--ly` (sheen and rim highlight) and `--sx/--sy` (shadow direction).
   - Springs (`class Spring`, Hooke + damping) drive: magnetic buttons, panel tilt, odometer digits, print lift, the QR card tilt, the hero letters
-    (underdamped rise), the couple scene (each figure follows scroll progress through its own spring), the lightbox (the print flies to the
+    (underdamped rise), the loader drops, the couple scene (each figure follows scroll progress through its own spring), the lightbox (the print flies to the
     centre), in-page link scrolling (critically damped), the loader curtain.
   - `Frame.scrollAccel` (px/s²) is the page's acceleration; things riding on the page feel the pseudo-force −m·a:
     the programme rows hang as a coupled mass–spring chain, the orbs float (buoyancy oscillator + Ornstein–Uhlenbeck forcing), the marquee is a
     belt with mass whose shear is a spring driven by its acceleration.
-  - Loader: a stream pours through a valve that follows load progress; volume → level by inverting the circular-segment area; the surface is
-    a 1-D wave equation with finite-depth speed; at 100% it drains by Torricelli's law.
+  - Loader: two water drops (him and her) condense on either side (radius overshoots on a spring) and slide together on springs as loading
+    progresses, each wobbling with `DropShape` modes; on contact they coalesce into one drop of summed area (R = √(r₁² + r₂²)) seeded with the
+    two-lobed shape (n = 2, n = 4 modes) that rings down for ~0.7 s; then the screen closes onto the drop (critically damped curtain) and the
+    drop draws itself in. Reduced motion: one still drop, removed as soon as loading finishes. No percentage or text beyond the names and date.
   - Photo table: Matter.js rigid bodies seen from above (no gravity, table friction, collisions, throwing).
   - Petal shower: each petal is a falling plate (Andersen–Pesavento–Wang 2005 quasi-steady model: angle-of-attack drag, circulation lift,
     broadside torque, rotational damping), which flutters and tumbles by itself; drawn as a disc projected from its 3-D plane. The button blows
@@ -87,7 +89,7 @@ To test with an installed Chrome instead: `CHROME_PATH=/usr/bin/google-chrome np
 
 ## Page sections (top to bottom)
 
-Loading screen (glass bubble fills with water to 100%, then drains away) → floating glass nav (+ bottom dock on phones) → hero (names, liquid orb photo, facts bar)
+Loading screen (two drops slide together and become one, then the screen closes into it) → floating glass nav (+ bottom dock on phones) → hero (names, liquid orb photo, facts bar)
 → velocity marquee → invitation + countdown + Add to calendar → "Him / Her / Us" pinned 3D scroll story ("Him" and "Her" ride above
   the groom and bride cards; they glide together, grow and dissolve completely into the "together" card, which carries "Us";
   all three use the same glass card frame)

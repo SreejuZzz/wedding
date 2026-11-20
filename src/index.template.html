@@ -133,26 +133,20 @@ section { scroll-margin-top: 96px; }
   background-attachment: fixed;
 }
 
-/* ---------- Loading screen ---------- */
+/* ---------- Loading screen ----------
+   Two drops of water, one from each side, slide together as the page loads and coalesce into one. */
 .loader { display: none; }
 .js .loader {
   position: fixed; inset: 0; z-index: 200; display: grid; place-items: center;
   background: var(--bg);
-  clip-path: circle(150% at 50% 50%);
 }
 .loader.is-done { pointer-events: none; }
-.loader-inner { display: grid; justify-items: center; gap: 26px; text-align: center; }
-.loader-drop {
-  position: relative; width: 168px; height: 168px; border-radius: 50%; overflow: hidden;
-  background: rgba(255,255,255,.7);
-  box-shadow: inset 0 2px 2px #fff, inset 0 -10px 30px rgba(0,0,0,.06), 0 30px 60px -30px rgba(0,0,0,.45), 0 0 0 1px rgba(0,0,0,.08);
-}
-.loader-water { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-.loader-pct { position: absolute; inset: 0; display: grid; place-items: center; font: 500 26px var(--sans); color: var(--ink); font-variant-numeric: tabular-nums; }
-.loader-gloss { position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(60% 40% at 32% 22%, rgba(255,255,255,.95), rgba(255,255,255,0) 70%); pointer-events: none; }
+.loader-inner { display: grid; justify-items: center; gap: 18px; text-align: center; }
+.loader-stage { width: min(380px, 88vw); height: 150px; }
+.loader-stage canvas { display: block; width: 100%; height: 100%; }
 .loader-names { font-family: var(--serif); font-size: clamp(34px, 5vw, 52px); line-height: 1; }
 .loader-names i { color: var(--black); }
-.loader-date { margin-top: -12px; }
+.loader-date { margin-top: -4px; }
 
 /* ---------- Water-drop cursor ----------
    Inside the drop is a live copy of the page drawn at a larger scale, so magnified text stays sharp.
@@ -409,11 +403,7 @@ footer { padding-block: 24px 40px; }
 
 <div class="loader" id="loader" role="status" aria-live="polite" aria-label="Loading">
   <div class="loader-inner">
-    <div class="loader-drop" id="loader-drop">
-      <canvas class="loader-water" id="loader-water"></canvas>
-      <span class="loader-pct" id="loader-pct">0</span>
-      <span class="loader-gloss"></span>
-    </div>
+    <div class="loader-stage" aria-hidden="true"><canvas id="loader-drops"></canvas></div>
     <p class="loader-names">Sreejith <i>&amp;</i> Jestina</p>
     <p class="label loader-date">10 · 01 · 2027 · Enchanted Woods</p>
   </div>
@@ -1445,87 +1435,121 @@ function initFluid() {
    Loading screen
    ===================================================================== */
 /**
- * The bubble really fills: a stream pours in through a valve that follows loading progress, the volume
- * sets the water level (inverting the area of a circular segment), and the surface is a row of columns
- * obeying the wave equation with the finite-depth speed c = √(g·tanh(kH)/k), kicked by the stream’s impact.
- * At 100% a hole opens in the bottom and it drains by Torricelli’s law, Q = a·√(2gH), while the curtain closes.
+ * Two drops condense out of nothing (their radius overshoots on surface tension), one on each side, and slide
+ * toward each other on springs as the page loads; each wobbles with its own Rayleigh modes as it accelerates.
+ * When they touch they coalesce: one drop with the summed area (R = √(r₁² + r₂²)) that starts as the
+ * two-lobed shape (n = 2 and n = 4 modes of 2r·|cos θ|, plus the closing speed) and rings down at
+ * ω_n ∝ √(n(n−1)(n+2)). Then the screen closes onto the drop as the drop draws itself in.
  */
 function runLoader(tasks) {
-  const loader = $("loader"), pct = $("loader-pct"), canvas = $("loader-water");
-  const MIN_MS = REDUCED ? 0 : 1400, MAX_MS = 7000;
+  const loader = $("loader"), canvas = $("loader-drops");
+  const MIN_MS = REDUCED ? 0 : 1400, MAX_MS = 7000, RING_MS = 700;
   const started = performance.now();
   let done = 0, finished = false;
   tasks.forEach((task) => Promise.resolve(task).catch(() => null).then(() => { done++; }));
 
-  const D = canvas.clientWidth || 168, r = D / 2, FULL = Math.PI * r * r;
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  canvas.width = canvas.height = Math.round(D * dpr);
   const ctx = canvas.getContext("2d");
-  const G = 5450;                    // px/s²: the bubble behaves like a bowl about 30 cm across
-  const N = 40, dx = D / N, H = 1 / 720, POUR_X = Math.round(N * 0.64);
-  const eta = new Float32Array(N), vel = new Float32Array(N);
-  let volume = 0, flow = 0, draining = false, lastPct = -1;
-  const clip = new Spring(150, 25, 10); // curtain radius in %, critically damped (ζ = 1)
-
-  // height of water in a circle of radius r holding area A (bisection on the segment area)
-  const levelFor = (A) => {
-    let lo = 0, hi = D;
-    for (let i = 0; i < 22; i++) {
-      const h = (lo + hi) / 2, d = r - h;
-      const area = r * r * Math.acos(clamp(d / r, -1, 1)) - d * Math.sqrt(Math.max(0, 2 * r * h - h * h));
-      if (area < A) lo = h; else hi = h;
-    }
-    return (lo + hi) / 2;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  let W = 0, H = 0, r = 0, centre = { x: 0, y: 0 };
+  const measure = () => {
+    const box = canvas.getBoundingClientRect();
+    W = box.width || 320; H = box.height || 150;
+    canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
+    r = clamp(W * 0.082, 22, 32);
+    centre = { x: box.left + W / 2, y: box.top + H / 2 };
   };
+  measure();
+  window.addEventListener("resize", measure);
 
-  function simulate(dt, goal) {
-    const n = Math.ceil(dt / H), h = dt / n;
-    for (let s = 0; s < n; s++) {
-      const level = levelFor(volume);
-      if (draining) flow = -26 * Math.sqrt(2 * G * Math.max(0, level)); // Torricelli
-      else flow = clamp((goal - volume) * 7, 0, 19000);                  // the valve
-      volume = clamp(volume + flow * h, 0, FULL);
-      const chord = 2 * Math.sqrt(Math.max(0, r * r - (r - level) * (r - level)));
-      const i0 = Math.max(0, Math.floor((r - chord / 2) / dx)), i1 = Math.min(N - 1, Math.ceil((r + chord / 2) / dx) - 1);
-      if (i1 - i0 < 2) { eta.fill(0); vel.fill(0); continue; }
-      const k = Math.PI / Math.max(chord, dx), c = Math.sqrt((G * Math.tanh(k * Math.max(level, 1))) / k);
-      const c2 = (c * c) / (dx * dx);
-      // the falling stream hands its momentum to the surface where it lands: ρQv
-      if (flow > 0 && POUR_X >= i0 && POUR_X <= i1) vel[POUR_X] -= flow * Math.sqrt(2 * G * Math.max(1, D - level)) * 2.2e-6 * h * 60;
-      for (let i = i0; i <= i1; i++) {
-        const L = eta[i === i0 ? i + 1 : i - 1], R = eta[i === i1 ? i - 1 : i + 1];   // walls reflect (zero slope)
-        vel[i] += (c2 * (L - 2 * eta[i] + R) - 2.2 * vel[i]) * h;
+  // the two drops: x is measured from the middle of the stage
+  const SLIDE_K = 38, SLIDE_C = 2 * Math.sqrt(38) * 0.86;
+  const drops = [-1, 1].map((side) => ({ side, x: side * (W / 2 - r * 1.6), v: 0, size: new Spring(0, 240, 15), shape: new DropShape() }));
+  let merged = null, mergedAt = 0;
+  // without motion: one still drop
+  if (REDUCED) merged = { x: 0, size: new Spring(Math.SQRT2 * r, 0, 0), shape: new DropShape() };
+  const clip = new Spring(0, 30, 2 * Math.sqrt(30));
+
+  function slide(dt, p) {
+    const reach = r * 0.85 + Math.max(0, W / 2 - r * 2.45) * (1 - p); // centre's distance from the middle
+    const n = Math.max(1, Math.ceil(dt / SPRING_STEP)), h = dt / n;
+    for (const d of drops) {
+      d.size.target = r;
+      d.size.step(dt);
+      let aSum = 0;
+      for (let i = 0; i < n; i++) {
+        const a = SLIDE_K * (d.side * reach - d.x) - SLIDE_C * d.v;
+        d.v += a * h; d.x += d.v * h; aSum += a;
       }
-      for (let i = i0; i <= i1; i++) eta[i] += vel[i] * h;
-      for (let i = 0; i < N; i++) if (i < i0 || i > i1) { eta[i] = 0; vel[i] = 0; }
+      d.shape.step(dt, Math.max(d.size.value, 4), aSum / n, 0);
     }
+    const [a, b] = drops;
+    if (p >= 1 && b.x - a.x <= a.size.value + b.size.value) coalesce(a, b);
+  }
+
+  function coalesce(a, b) {
+    const R = Math.hypot(a.size.value, b.size.value);
+    const shape = new DropShape();
+    const [m2, , m4] = shape.modes;
+    m2.c = 0.66; m4.c = -0.13;                 // two touching circles, seen from the new centre
+    m2.vc = (b.v - a.v) / (2 * R);             // still closing: the long axis keeps shrinking
+    merged = { x: (a.x + b.x) / 2, size: new Spring(R, 140, 2 * Math.sqrt(140) * 0.9), shape };
+    mergedAt = performance.now();
+  }
+
+  function paintDrop(pts, cx, cy, R) {
+    const L = DROP.light;
+    // shadow cast away from the light, and the caustic the drop focuses into it
+    ctx.save();
+    ctx.translate(-L.x * R * 0.3, -L.y * R * 0.3);
+    traceOutline(ctx, pts);
+    let g = ctx.createRadialGradient(cx, cy, R * 0.1, cx, cy, R * 1.1);
+    g.addColorStop(0, "rgba(0,0,0,0.04)"); g.addColorStop(0.72, "rgba(0,0,0,0.13)"); g.addColorStop(1, "rgba(0,0,0,0.03)");
+    ctx.fillStyle = g; ctx.fill();
+    ctx.restore();
+    const kx = cx - L.x * R * 0.42, ky = cy - L.y * R * 0.42;
+    g = ctx.createRadialGradient(kx, ky, 0, kx, ky, R * 0.42);
+    g.addColorStop(0, "rgba(255,255,255,0.9)"); g.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = g; ctx.fillRect(kx - R, ky - R, R * 2, R * 2);
+    // the water: dark refracting rim, bright crescent opposite the light, specular window and glint
+    ctx.save();
+    traceOutline(ctx, pts);
+    ctx.clip();
+    ctx.fillStyle = "rgba(255,255,255,0.28)";
+    ctx.fillRect(cx - R * 2, cy - R * 2, R * 4, R * 4);
+    g = ctx.createRadialGradient(cx, cy, R * 0.45, cx, cy, R * 1.08);
+    g.addColorStop(0, "rgba(0,0,0,0)"); g.addColorStop(0.7, "rgba(0,0,0,0.05)"); g.addColorStop(0.9, "rgba(0,0,0,0.24)"); g.addColorStop(1, "rgba(0,0,0,0.5)");
+    ctx.fillStyle = g; ctx.fillRect(cx - R * 2, cy - R * 2, R * 4, R * 4);
+    const sx = cx + L.x * R * 0.32, sy = cy + L.y * R * 0.32;
+    g = ctx.createRadialGradient(sx, sy, R * 0.9, sx, sy, R * 1.32);
+    g.addColorStop(0, "rgba(255,255,255,0)"); g.addColorStop(0.55, "rgba(255,255,255,0.6)"); g.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = g; ctx.fillRect(cx - R * 2, cy - R * 2, R * 4, R * 4);
+    ctx.save();
+    ctx.translate(cx + L.x * R * 0.55, cy + L.y * R * 0.55);
+    ctx.rotate(Math.atan2(L.y, L.x) + Math.PI / 2);
+    ctx.scale(1, 0.5);
+    g = ctx.createRadialGradient(0, 0, 0, 0, 0, R * 0.28);
+    g.addColorStop(0, "rgba(255,255,255,0.95)"); g.addColorStop(0.55, "rgba(255,255,255,0.55)"); g.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(0, 0, R * 0.28, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    ctx.fillStyle = "#fff";
+    ctx.beginPath(); ctx.arc(cx + L.x * R * 0.7, cy + L.y * R * 0.7, Math.max(1, R * 0.05), 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    traceOutline(ctx, pts);
+    g = ctx.createLinearGradient(cx + L.x * R, cy + L.y * R, cx - L.x * R, cy - L.y * R);
+    g.addColorStop(0, "rgba(255,255,255,0.9)"); g.addColorStop(0.5, "rgba(0,0,0,0.12)"); g.addColorStop(1, "rgba(0,0,0,0.4)");
+    ctx.strokeStyle = g; ctx.lineWidth = 1; ctx.stroke();
   }
 
   function draw() {
-    const level = levelFor(volume);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, D, D);
-    if (volume <= 1) return;
-    const surface = (offset, alpha) => {
-      ctx.beginPath();
-      ctx.moveTo(0, D);
-      for (let i = 0; i < N; i++) ctx.lineTo((i + 0.5) * dx, D - level - eta[i] - offset);
-      ctx.lineTo(D, D - level - eta[N - 1] - offset);
-      ctx.lineTo(D, D);
-      ctx.closePath();
-      ctx.fillStyle = `rgba(0,0,0,${alpha})`;
-      ctx.fill();
-    };
-    surface(5, 0.08);   // far side of the meniscus
-    surface(0, 0.16);
-    if (flow > 0) {
-      // the stream narrows as it falls and speeds up (continuity: width ∝ 1/v)
-      const x = (POUR_X + 0.5) * dx, bottom = D - level - eta[POUR_X];
-      const w0 = clamp(flow / 4200, 0.6, 4.5), w1 = w0 * Math.sqrt(8 / (8 + bottom));
-      ctx.beginPath();
-      ctx.moveTo(x - w0 / 2, 0); ctx.lineTo(x + w0 / 2, 0); ctx.lineTo(x + w1 / 2, bottom); ctx.lineTo(x - w1 / 2, bottom);
-      ctx.fillStyle = "rgba(0,0,0,0.2)";
-      ctx.fill();
+    ctx.clearRect(0, 0, W, H);
+    const mid = W / 2, y = H / 2;
+    const list = merged ? [merged] : drops;
+    for (const d of list) {
+      const R = d.size.value;
+      if (R < 0.5) continue;
+      paintDrop(d.shape.outline(mid + d.x, y, R), mid + d.x, y, R);
     }
   }
 
@@ -1538,28 +1562,31 @@ function runLoader(tasks) {
       Page.ready = true;
       resolve();
       if (REDUCED) { loader.remove(); return; }
-      draining = true;
+      clip.value = clip.target = Math.hypot(window.innerWidth, window.innerHeight);
+      clip.target = 0;
     };
-    let holdUntil = 0;
     const job = Ticker.add({
       write(dt, now) {
         const elapsed = now - started;
-        const goal = FULL * Math.min(done / tasks.length, MIN_MS ? Math.min(1, elapsed / MIN_MS) : 1);
-        if (REDUCED) volume = goal; else simulate(dt, goal);
-        const p = finished ? 100 : Math.min(100, Math.round((volume / FULL) * 100));
-        if (p !== lastPct) { pct.textContent = p; lastPct = p; }
+        const p = elapsed > MAX_MS ? 1 : Math.min(done / tasks.length, MIN_MS ? Math.min(1, elapsed / MIN_MS) : 1);
+        if (REDUCED) {
+          draw();
+          if (p >= 1) { finish(); job.done = true; }
+          return;
+        }
+        if (!merged) slide(dt, p);
+        else { merged.size.step(dt); merged.shape.step(dt, Math.max(merged.size.value, 4), 0, 0); }
         draw();
-        if (!finished && (volume >= FULL * 0.999 || elapsed > MAX_MS)) {
-          if (!holdUntil) holdUntil = now + 280;
-          if (now >= holdUntil || elapsed > MAX_MS) finish();
+        if (merged && !finished && now - mergedAt >= RING_MS) finish();
+        if (finished) {
+          // the screen closes onto the drop while the drop draws itself in
+          // once the edge reaches the drop, the drop draws itself in too
+          if (clip.value < merged.size.value * 4) merged.size.target = 0;
+          const R = Math.max(0, merged.size.value);
+          const radius = Math.max(clip.step(dt), R * 1.6 + 10 * Math.min(1, R / 8));
+          loader.style.clipPath = `circle(${radius.toFixed(1)}px at ${centre.x.toFixed(1)}px ${centre.y.toFixed(1)}px)`;
+          if (clip.value < 1 && R < 0.5) { loader.remove(); window.removeEventListener("resize", measure); job.done = true; }
         }
-        if (finished && !REDUCED) {
-          clip.target = 0;
-          const radius = Math.max(0, clip.step(dt));
-          loader.style.clipPath = `circle(${radius.toFixed(2)}% at 50% 50%)`;
-          if (radius < 0.4) { loader.remove(); job.done = true; }
-        }
-        if (finished && REDUCED) job.done = true;
       },
     });
   });
