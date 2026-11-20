@@ -135,6 +135,14 @@ Loading screen (two drops slide together and become one, the drop flies into the
   frames stay slow after the loader.
 - Springs integrate in fixed 1/240 s sub-steps (`SPRING_STEP`), so motion doesn't jitter when frame times vary.
 - Only write a style when the value changed (see the `last` caches in the modules).
+- Layers only while needed: the sheen and rim-light spots get `will-change: transform` only while their panel is near the screen
+  (`initLight` toggles it; their moves are 2-D `translate`, since a 3-D transform alone forces a layer); the hero letters are layers only while
+  they rise. On a phone this keeps ~85 layers instead of ~145.
+- Idle modules sleep: the photo table skips Matter and its style writes when nothing on it moves (`poke()` wakes it on deal, drag, toss and
+  resize); media queries are read on `change`, never per frame.
+- Dead-code check: besides ESLint, load the page (desktop, phone, landscape, reduced motion), scroll it, open the lightbox, and test every CSS
+  selector with `querySelector`; selectors that never match are dead unless they belong to the loader, the GL glass, the no-WebGL fallback or a
+  touch-only state.
 
 ## Engineering notes
 

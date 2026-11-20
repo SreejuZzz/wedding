@@ -43,7 +43,7 @@ body { margin: 0; background: var(--bg); color: var(--ink); font: 400 17px/1.65 
 img { max-width: 100%; height: auto; display: block; }
 a { color: inherit; }
 h1, h2, h3 { margin: 0; font-weight: 400; text-wrap: balance; }
-p, figure, dl, dd { margin: 0; }
+p, figure { margin: 0; }
 button { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--black); outline-offset: 3px; border-radius: 8px; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
@@ -91,7 +91,7 @@ section { scroll-margin-top: 96px; }
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor; mask-composite: exclude;
 }
-.rim i { position: absolute; left: 0; top: 0; width: 720px; height: 720px; border-radius: 50%; will-change: transform; transform: translate3d(-2000px, 0, 0); }
+.rim i { position: absolute; left: 0; top: 0; width: 720px; height: 720px; border-radius: 50%; transform: translate(-2000px, 0); }
 .rim .rim-light { background: radial-gradient(closest-side, #fff, rgba(255,255,255,.75) 35%, rgba(255,255,255,0)); }
 .rim .rim-shade { background: radial-gradient(closest-side, rgba(0,0,0,.42), rgba(0,0,0,.16) 45%, rgba(0,0,0,0)); }
 .lens-page .rim, .lens-fixed .rim { display: none; }
@@ -102,12 +102,12 @@ section { scroll-margin-top: 96px; }
 .gl-glass .has-gl { background: transparent !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
   box-shadow: 0 1px 2px rgba(0,0,0,.06), 0 24px 44px -26px rgba(0,0,0,.32); }
 .gl-glass .has-gl > .sheen { display: none; }
-/* the page light: a soft highlight moved with transforms only */
+/* the page light: a soft highlight moved with transforms only (on its own layer only while its panel is near the screen) */
 .has-sheen { overflow: hidden; }
 .sheen {
   position: absolute; left: 0; top: 0; width: 900px; height: 900px; border-radius: 50%; pointer-events: none; z-index: -1;
   background: radial-gradient(closest-side, rgba(255,255,255,.62), rgba(255,255,255,.18) 55%, rgba(255,255,255,0));
-  will-change: transform; transform: translate3d(-200px, -600px, 0);
+  transform: translate(-200px, -600px);
 }
 
 .btn {
@@ -153,7 +153,7 @@ section { scroll-margin-top: 96px; }
    from one light source at the top left. */
 .lens, .lens-shadow { position: fixed; left: 0; top: 0; pointer-events: none; opacity: 0; transition: opacity .25s; }
 .lens { z-index: 151; overflow: hidden; contain: layout paint; background: var(--bg); will-change: transform; }
-.lens-page .sheen, .lens-fixed .sheen { display: none; }
+.lens-page .sheen { display: none; }
 .lens-shadow {
   z-index: 150; width: 100px; height: 100px; margin: -50px 0 0 -50px; border-radius: 50%; will-change: transform;
   background: radial-gradient(closest-side, rgba(255,255,255,.75), rgba(255,255,255,.25) 38%, rgba(0,0,0,.14) 72%, rgba(0,0,0,0));
@@ -210,12 +210,10 @@ section { scroll-margin-top: 96px; }
 .hero-copy { display: grid; gap: 26px; justify-items: start; }
 .chip { display: inline-flex; align-items: center; gap: 12px; padding: 10px 18px; border-radius: 999px; font: 500 14px var(--sans); }
 .chip .ml { font-family: var(--ml); font-weight: 700; font-size: 16px; color: var(--black); }
-.chip .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--black); box-shadow: 0 0 0 4px rgba(0,0,0,.12); }
 .names { font-family: var(--serif); font-size: clamp(76px, 11vw, 184px); line-height: .88; letter-spacing: -0.02em; }
 .names .line { display: block; overflow: hidden; padding: 0 .12em .22em 0; margin-bottom: -.16em; }
 .names .amp { font-style: italic; color: var(--black); font-size: .62em; margin-right: .12em; }
 .names .char { display: inline-block; }
-.names .char { will-change: transform; }
 .hero-lede { font-size: clamp(18px, 1.6vw, 21px); line-height: 1.55; color: var(--ink-soft); max-width: 34ch; }
 
 .orb-wrap { display: grid; place-items: center; }
@@ -285,13 +283,15 @@ button.hero-hint { border: 0; background: none; padding: 8px 0; cursor: pointer;
 .duo-fig img { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; border-radius: 18px; }
 .duo-portrait { width: clamp(150px, 20vw, 300px); width: clamp(120px, min(20vw, 34svh), 300px); }
 @media (min-width: 761px) and (orientation: portrait) { .duo-portrait { width: min(32vw, 300px); } }
+@media (min-height: 501px) and (max-height: 640px) { .duo-titles { top: 72px; } }
 @media (max-height: 500px) {
   .duo-titles .chip { display: none; }
   .duo-fig { top: 58%; }
   .duo-word { font-size: 40px; bottom: calc(100% + 8px); }
   .duo-portrait figcaption { flex-direction: column; gap: 4px; padding-inline: 4px; }
 }
-.duo-portrait figcaption { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 12px 8px 4px; }
+.duo-portrait figcaption { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 10px; padding: 12px 8px 4px; }
+.duo-portrait figcaption .label { white-space: nowrap; }
 .duo-portrait figcaption b { font: 400 clamp(22px, 2vw, 30px)/1 var(--serif); }
 .duo-together { z-index: 2; opacity: 0; }
 .duo-progress { position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%); width: 140px; height: 4px; border-radius: 4px; background: rgba(0,0,0,.12); overflow: hidden; }
@@ -1992,7 +1992,7 @@ function initLens(fluid) {
   window.addEventListener("resize", () => { clearTimeout(rebuildTimer); rebuildTimer = setTimeout(() => mirror && mirror.rebuild(), 250); });
 
   const BACKGROUND = "html, body, main, header, footer, section, canvas, .wrap, .hero, .hero-grid, .hero-copy, .orb-wrap, .duo-track, .duo-stage, .programme-grid, .table-head, .venue-panel, .finale-panel, .invite-panel, .desk";
-  const pos = { x: 0, y: 0, vx: 0, vy: 0, ax: 0, ay: 0 };
+  const pos = { x: 0, y: 0, vx: 0, vy: 0 };
   const radius = new Spring(DROP.idleRadius, 260, 18);
   const zoom = new Spring(DROP.idleZoom, 220, 26);
   const shape = new DropShape();
@@ -2227,7 +2227,7 @@ function initLight() {
     light.className = "rim-light"; shade.className = "rim-shade";
     rim.append(light, shade);
     el.append(rim);
-    const p = { el, sheen, light, shade, fixed, vis: fixed ? { visible: true } : visibility(el), last: "", view: null, w: 0, h: 0 };
+    const p = { el, sheen, light, shade, fixed, vis: fixed ? { visible: true } : visibility(el), last: "", view: null, w: 0, h: 0, layered: false };
     // fixed bars: their place on screen only changes with layout, so measure them then
     new ResizeObserver(() => {
       const r = el.getBoundingClientRect();
@@ -2245,6 +2245,13 @@ function initLight() {
       const ly = FINE_POINTER && Pointer.active ? Pointer.y : Frame.vh * (-0.25 + Motion.y * 0.9);
       Light.x = lx; Light.y = ly;
       for (const p of panels) {
+        // the moving spots get their own layers only while the panel is near the screen
+        if (p.vis.visible !== p.layered) {
+          p.layered = p.vis.visible;
+          const wc = p.layered ? "transform" : "";
+          if (p.sheen) p.sheen.style.willChange = wc;
+          p.light.style.willChange = p.shade.style.willChange = wc;
+        }
         if (!p.vis.visible) continue;
         let left, top;
         if (p.fixed) { if (!p.view) continue; left = p.view.left; top = p.view.top; }
@@ -2254,12 +2261,12 @@ function initLight() {
         const key = `${px},${py}`;
         if (key === p.last) continue;
         p.last = key;
-        if (p.sheen) p.sheen.style.transform = `translate3d(${px - SHEEN / 2}px, ${py - SHEEN / 2}px, 0)`;
+        if (p.sheen) p.sheen.style.transform = `translate(${px - SHEEN / 2}px, ${py - SHEEN / 2}px)`;
         // pull the light onto the panel's edge region so the arc is always on the rim nearest the light
         const cx = p.w / 2, cy = p.h / 2;
         const ex = clamp(px, -RIM * 0.15, p.w + RIM * 0.15), ey = clamp(py, -RIM * 0.15, p.h + RIM * 0.15);
-        p.light.style.transform = `translate3d(${Math.round(ex - RIM / 2)}px, ${Math.round(ey - RIM / 2)}px, 0)`;
-        p.shade.style.transform = `translate3d(${Math.round(2 * cx - ex - RIM / 2)}px, ${Math.round(2 * cy - ey - RIM / 2)}px, 0)`;
+        p.light.style.transform = `translate(${Math.round(ex - RIM / 2)}px, ${Math.round(ey - RIM / 2)}px)`;
+        p.shade.style.transform = `translate(${Math.round(2 * cx - ex - RIM / 2)}px, ${Math.round(2 * cy - ey - RIM / 2)}px)`;
       }
     },
   });
@@ -2537,7 +2544,7 @@ function initDuo() {
   };
   const render = (q) => {
     const vw = Frame.vw, narrow = vw < 760;
-    const startX = vw * (narrow ? 0.24 : 0.3), endScale = narrow ? 1.22 : 1.12;
+    const startX = Math.min(vw * (narrow ? 0.24 : 0.3), 560), endScale = narrow ? 1.22 : 1.12;
     portrait(groom, "g", q.g, -1, startX, endScale);
     portrait(bride, "b", q.b, 1, startX, endScale);
     const reveal = ease(span(q.t, 0.46, 0.8));
@@ -2687,6 +2694,9 @@ function initDesk(openLightbox) {
   const world = engine.world;
   const items = [];
   let walls = [], zTop = 10, dealt = false;
+  // the table sleeps when nothing on it moves; anything that disturbs it keeps it awake for a moment
+  let awake = 0;
+  const poke = (seconds = 0.5) => { awake = Math.max(awake, seconds); };
   let size = { w: desk.clientWidth, h: desk.clientHeight };
 
   function buildWalls() {
@@ -2753,6 +2763,7 @@ function initDesk(openLightbox) {
       grab = { it, constraint, start: p, moved: 0 };
       it.el.classList.add("is-held");
       it.held = true;
+      poke();
       it.el.style.zIndex = String(++zTop);
       it.el.setPointerCapture(e.pointerId);
       e.preventDefault();
@@ -2770,12 +2781,14 @@ function initDesk(openLightbox) {
       it.held = false;
       it.el.dataset.dragged = grab.moved > 6 ? "1" : "0";
       grab = null;
+      poke();
     };
     it.el.addEventListener("pointerup", drop);
     it.el.addEventListener("pointercancel", drop);
   });
 
   $("toss-btn").addEventListener("click", () => {
+    poke();
     items.forEach((it) => {
       const a = Math.random() * Math.PI * 2, speed = 18 + Math.random() * 16;
       Body.setVelocity(it.body, { x: Math.cos(a) * speed, y: Math.sin(a) * speed });
@@ -2784,6 +2797,7 @@ function initDesk(openLightbox) {
   });
 
   function deal() {
+    poke(2);
     const { w: W, h: H } = size;
     const targets = restingLayout();
     const friction = items[0].body.frictionAir;
@@ -2807,6 +2821,7 @@ function initDesk(openLightbox) {
     buildWalls();
     items.forEach((it) => Body.setPosition(it.body, { x: clamp(it.body.position.x, it.w / 2, size.w - it.w / 2), y: clamp(it.body.position.y, it.h / 2, size.h - it.h / 2) }));
     sync();
+    poke();
   }).observe(desk);
 
   if (REDUCED) return;
@@ -2819,6 +2834,9 @@ function initDesk(openLightbox) {
   Ticker.add({
     active: () => vis.visible,
     write(dt) {
+      const moving = grab || awake > 0 || items.some((it) => it.body.speed > 0.02 || Math.abs(it.body.angularVelocity) > 0.0005 || !it.lift.settled);
+      if (!moving) { acc = 0; return; }
+      awake = Math.max(0, awake - dt);
       acc += dt;
       let steps = 0;
       while (acc >= 1 / 120 && steps < 6) { Engine.update(engine, 1000 / 120); acc -= 1 / 120; steps++; }
@@ -3069,6 +3087,7 @@ function initDock() {
   const row = $("dock-row"), inverse = $("dock-inverse"), pill = $("dock-pill");
   const nav = document.querySelector(".nav");
   const narrow = window.matchMedia("(max-width: 860px)");
+  let isNarrow = narrow.matches;
   const links = [...row.querySelectorAll("a")];
   const sections = links.map((a) => Geometry.track(document.getElementById(a.getAttribute("href").slice(1))));
   let width = row.clientWidth, item = width / links.length;
@@ -3081,7 +3100,7 @@ function initDock() {
   let active = -2, last = "", lastNav = "";
 
   Ticker.add({
-    active: () => narrow.matches,
+    active: () => isNarrow,
     write(dt) {
       // which section is under the upper part of the screen
       const probe = Frame.scrollY + Frame.vh * 0.45;
@@ -3114,7 +3133,7 @@ function initDock() {
       if (t !== lastNav) { nav.style.transform = t; lastNav = t; }
     },
   });
-  narrow.addEventListener("change", () => { if (!narrow.matches) { nav.style.transform = ""; lastNav = ""; } });
+  narrow.addEventListener("change", () => { isNarrow = narrow.matches; if (!isNarrow) { nav.style.transform = ""; lastNav = ""; } });
 }
 
 /* =====================================================================
