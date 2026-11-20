@@ -302,16 +302,13 @@ button.hero-hint { border: 0; background: none; padding: 8px 0; cursor: pointer;
 .duo-portrait { width: clamp(150px, 20vw, 300px); }
 .duo-portrait figcaption { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 12px 8px 4px; }
 .duo-portrait figcaption b { font: 400 clamp(22px, 2vw, 30px)/1 var(--serif); }
-.duo-together { width: clamp(190px, 25vw, 380px); z-index: 2; border-radius: 999px 999px 26px 26px; }
-.duo-together .frame { border-radius: 999px 999px 18px 18px; overflow: hidden; will-change: clip-path; }
-.duo-together img { border-radius: 0; }
+.duo-together { z-index: 2; opacity: 0; }
 .duo-progress { position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%); width: 140px; height: 4px; border-radius: 4px; background: rgba(0,0,0,.12); overflow: hidden; }
 .duo-progress i { position: absolute; inset: 0; background: var(--black); transform-origin: left; transform: scaleX(0); }
 .is-static .duo-track { height: auto; }
 .is-static .duo-stage { position: relative; height: auto; min-height: 100vh; }
 @media (max-width: 760px) {
   .duo-portrait { width: 38vw; padding: 6px; border-radius: 18px; }
-  .duo-together { width: 52vw; padding: 6px; }
   .duo-portrait figcaption { flex-direction: column; gap: 4px; padding-inline: 4px; }
   .duo-portrait figcaption .label { font-size: 11.5px; }
 }
@@ -534,8 +531,9 @@ footer { padding-block: 24px 40px; }
         <img src="photos/jestina-bw.jpg" alt="Black and white portrait of Jestina wearing jasmine in her hair" width="719" height="959" loading="lazy">
         <figcaption><b>Jestina</b><span class="label">The bride</span></figcaption>
       </figure>
-      <figure class="duo-fig duo-together glass" id="duo-together">
-        <div class="frame"><img src="photos/together-bw.jpg" alt="Black and white photo of Jestina and Sreejith smiling, each holding a bouquet" width="639" height="959" loading="lazy"></div>
+      <figure class="duo-fig duo-portrait duo-together glass" id="duo-together">
+        <img src="photos/together-bw.jpg" alt="Black and white photo of Jestina and Sreejith smiling, each holding a bouquet" width="639" height="959" loading="lazy">
+        <figcaption><b>Together</b><span class="label">10 · 01 · 2027</span></figcaption>
       </figure>
       <div class="duo-progress" aria-hidden="true"><i id="duo-progress"></i></div>
     </div>
@@ -2340,27 +2338,39 @@ function initDuo() {
   const track = Geometry.track($("duo-track"));
   const groom = $("duo-groom"), bride = $("duo-bride"), together = $("duo-together");
   const titleA = $("duo-title-a"), titleB = $("duo-title-b"), bar = $("duo-progress");
-  const frame = together.querySelector(".frame");
-  let pw = groom.offsetWidth, tw = together.offsetWidth;
-  new ResizeObserver(() => { pw = groom.offsetWidth; tw = together.offsetWidth; last = -1; }).observe(together);
+  let pw = groom.offsetWidth;
+  new ResizeObserver(() => { pw = groom.offsetWidth; last = -1; }).observe(groom);
   let last = -1;
 
   // q = progress per element: { g: groom, b: bride, t: together, ti: titles, bar }
+  // Story: the two portraits start apart, turned toward each other in 3D. As you scroll they glide to the
+  // centre, straighten and grow to the size of the "together" card, landing almost on top of each other;
+  // there they dissolve completely while the together card (the same frame) fades up in their place.
+  const lastVis = { g: "", b: "" };
+  const captions = { g: groom.querySelector("figcaption"), b: bride.querySelector("figcaption"), t: together.querySelector("figcaption") };
+  const portrait = (el, key, p, side, startX, endScale) => {
+    // names leave first, so the two captions never sit on top of each other while the cards overlap
+    captions[key].style.opacity = (1 - ease(span(p, 0.28, 0.48))).toFixed(3);
+    const move = ease(span(p, 0.04, 0.6));
+    const fade = ease(span(p, 0.44, 0.72));
+    const x = side * lerp(startX, pw * 0.07, move);
+    const turn = lerp(34, 0, move), roll = lerp(8, 0, move), depth = lerp(-160, 0, move);
+    const scale = lerp(1, endScale * 0.97, move);
+    el.style.transform = `translate(-50%, -50%) translate3d(${x.toFixed(1)}px, 0, ${depth.toFixed(1)}px) rotateY(${(-side * turn).toFixed(2)}deg) rotateZ(${(side * roll).toFixed(2)}deg) scale(${scale.toFixed(4)})`;
+    const opacity = 1 - fade;
+    el.style.opacity = opacity.toFixed(3);
+    const vis = opacity < 0.002 ? "hidden" : "visible";
+    if (vis !== lastVis[key]) { el.style.visibility = vis; lastVis[key] = vis; }
+  };
   const render = (q) => {
     const vw = Frame.vw, narrow = vw < 760;
-    const moveG = ease(span(q.g, 0.05, 0.6)), moveB = ease(span(q.b, 0.05, 0.6)), reveal = ease(span(q.t, 0.4, 0.85));
-    const pose = (move) => ({
-      x: lerp(vw * (narrow ? 0.25 : 0.3), narrow ? tw * 0.42 : tw / 2 + pw * 0.36, move),
-      rot: lerp(8, 4, move), turn: lerp(34, 10, move), depth: lerp(-160, 0, move),
-    });
-    const G = pose(moveG), B = pose(moveB);
-    const yG = lerp(0, narrow ? 150 : 40, ease(span(q.g, 0.4, 0.85))), yB = lerp(0, narrow ? 150 : 40, ease(span(q.b, 0.4, 0.85)));
-    groom.style.transform = `translate(-50%, -50%) translate3d(${(-G.x).toFixed(1)}px, ${yG.toFixed(1)}px, ${G.depth.toFixed(1)}px) rotateY(${G.turn.toFixed(2)}deg) rotateZ(${(-G.rot).toFixed(2)}deg)`;
-    bride.style.transform = `translate(-50%, -50%) translate3d(${B.x.toFixed(1)}px, ${(yB + 30).toFixed(1)}px, ${B.depth.toFixed(1)}px) rotateY(${(-B.turn).toFixed(2)}deg) rotateZ(${B.rot.toFixed(2)}deg)`;
-    const inset = lerp(50, 0, reveal).toFixed(2);
-    frame.style.clipPath = `inset(${inset}% ${inset}% ${inset}% ${inset}% round 999px 999px 18px 18px)`;
-    together.style.opacity = span(q.t, 0.38, 0.5).toFixed(3);
-    together.style.transform = `translate(-50%, -50%) translate3d(0, ${lerp(60, 0, reveal).toFixed(1)}px, ${lerp(-220, 40, reveal).toFixed(1)}px) rotateX(${lerp(24, 0, reveal).toFixed(2)}deg)`;
+    const startX = vw * (narrow ? 0.24 : 0.3), endScale = narrow ? 1.22 : 1.12;
+    portrait(groom, "g", q.g, -1, startX, endScale);
+    portrait(bride, "b", q.b, 1, startX, endScale);
+    const reveal = ease(span(q.t, 0.46, 0.8));
+    together.style.opacity = reveal.toFixed(3);
+    captions.t.style.opacity = ease(span(q.t, 0.64, 0.86)).toFixed(3);
+    together.style.transform = `translate(-50%, -50%) translate3d(0, ${lerp(12, 0, reveal).toFixed(1)}px, ${lerp(-60, 0, reveal).toFixed(1)}px) scale(${lerp(endScale * 0.95, endScale, reveal).toFixed(4)})`;
     const swap = span(q.ti, 0.42, 0.62);
     titleA.style.opacity = (1 - swap).toFixed(3);
     titleA.style.transform = `translate3d(0, ${(-swap * 30).toFixed(1)}px, 0)`;
