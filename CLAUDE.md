@@ -7,20 +7,26 @@ https://enchantedwoodsresort.in/). Exact map pin: https://maps.app.goo.gl/kFsiCW
 ## Layout of this repo
 
 - `src/index.template.html` — **the only file to edit.** One self-contained page: HTML, CSS and JS inline.
-  Placeholders `{{MAPS_URL}}`, `{{MAPS_URL_ENCODED}}`, `{{QR_SVG}}` are filled by the build.
-- `scripts/build.mjs` — builds `site/index.html` (injects the map link and generates the QR code as inline SVG with `qrcode`).
+  Placeholders `{{MAPS_URL}}`, `{{MAPS_URL_ENCODED}}`, `{{QR_SVG}}`, `{{ML_TEXT}}` are filled by the build.
+- `scripts/build.mjs` — builds `site/index.html`: injects the map link, generates the QR code as inline SVG (`qrcode`), puts every
+  character of the `lang="ml"` text into the Manjari request (`text=`, so phones download a few KB, not the whole Malayalam font),
+  makes `site/photos/thumb/*.jpg` (520 px, `sharp`, regenerated when the source photo changes; `sources.json` keeps the hashes)
+  for every `photos/thumb/…` the page uses, fails on any missing `photos/` or `vendor/` file, and minifies the inline CSS/JS
+  with `esbuild` (no syntax lowering). `MINIFY=0 npm run build` gives readable output for debugging.
 - `scripts/check.mjs` — Playwright smoke test in headless Chromium: page/console errors, horizontal overflow (desktop 1366×860 and
   phone 390×844), QR decodes to the map link (jsQR), lens appears (phone: resting drop appears and drags); writes screenshots to `screenshots/`.
 - `scripts/serve.mjs` — zero-dependency static preview server for `site/` (default port 8000, `PORT=` to change).
-- `scripts/perf.mjs` (`npm run perf`) — scrolls the page and sweeps the mouse while recording every frame; prints frame-time
+- `scripts/perf.mjs` (`npm run perf`, `PHONE=1` for a 390×844 touch phone at 4× CPU throttle) — scrolls the page and sweeps the mouse while recording every frame; prints frame-time
   percentiles and Chrome's layout / style-recalc / script counters. Headless uses a software GPU: compare runs, not absolutes
   (`HEADED=1 npm run perf` for a real GPU).
 - Tooling is Node.js only (≥ 18, ES modules). No Python.
-- `site/` — the deployable static site: `index.html` (generated — never edit by hand), `photos/`, `vendor/matter.min.js` (Matter.js 0.19.0, MIT).
+- `site/` — the deployable static site: `index.html` (generated and minified — never edit by hand), `photos/` (+ generated `photos/thumb/`),
+  `vendor/matter.min.js` (Matter.js 0.19.0, MIT).
+- `node_modules/` and `screenshots/` are git-ignored (CI installs with `npm ci` and keeps the screenshots as an artifact).
 
 Workflow: edit the template → `npm run check` (builds, then tests) → look at the screenshots in `screenshots/` → push.
 CI (`.github/workflows/site.yml`) runs `npm run check` on every push and PR, keeps the screenshots as an artifact, and deploys
-`site/` to GitHub Pages from `main` (Pages source must be "GitHub Actions"). Commit the regenerated `site/index.html` with the template.
+`site/` to GitHub Pages from `main` (Pages source must be "GitHub Actions"). Commit the regenerated `site/index.html` (and any new `site/photos/thumb/` files) with the template.
 Local preview: `npm run dev` then open http://localhost:8000. First-time setup: `npm install && npx playwright install chromium`.
 To test with an installed Chrome instead: `CHROME_PATH=/usr/bin/google-chrome npm run check`.
 
@@ -29,7 +35,7 @@ To test with an installed Chrome instead: `CHROME_PATH=/usr/bin/google-chrome np
 - **Light-mode liquid glass floating on water.** Frosted glass panels (`.glass`) over a full-screen watercolour fluid simulation.
 - **Accents are pure black and white only.** Buttons are solid black, inverting to white with a black ring on hover; countdown tiles black;
   programme rows turn black as you reach them. Colour comes from the water (greens and oranges), the photos and the petals.
-- **Typography:** Instrument Serif (display), Geist (UI/body), Geist Mono (loader %), Manjari (Malayalam). Loaded from Google Fonts.
+- **Typography:** Instrument Serif (display), Geist (UI/body, tabular figures for the loader %), Manjari (Malayalam, subset to the page's own text). Loaded from Google Fonts.
 - **Readability rules:** dark ink on milky glass; body ≥ 16px; labels ≥ 12.5px; never dim text for effect; never put text on top of photos.
   Glass fill never goes below 64% white: that keeps `--ink-mute` (#404040) at ≥ 4.5:1 even over the darkest paint.
 - **Liquid glass is real refraction** wherever the GPU hand-off is cheap (phones included): `initGlass` gives each large panel
@@ -131,4 +137,7 @@ Loading screen (glass bubble fills with water to 100%, then drains away) → flo
 - On touch, prints use `touch-action: pan-y`: vertical swipes scroll, sideways swipes throw. Never trap vertical scrolling.
 - Fixed bars (nav, dock) respect `env(safe-area-inset-*)` (`viewport-fit=cover`); the footer leaves room for the dock.
 - Perf on phones: a 390×844 mobile context with `Emulation.setCPUThrottlingRate` 4 should hold 60 fps while scrolling (headed, real GPU).
-- Test both desktop and phone widths; no horizontal scrolling allowed.
+- Test both desktop and phone widths; no horizontal scrolling allowed. Layouts that need care beyond 390×844: 360×740, landscape phones
+  (≤ 500px tall: no dock, the top bar keeps its links, couple cards sized by height), portrait tablets (bigger couple cards; 4+4+3 prints).
+- Table prints use `photos/thumb/` (`data-full` keeps the full photo for the lightbox); the resting layout balances rows (6+5, 4+4+3, 3+3+3+2).
+- Nothing per frame may query the DOM (`querySelector`, attribute reads); cache elements at init.

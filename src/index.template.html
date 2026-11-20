@@ -11,7 +11,8 @@
 <script>document.documentElement.classList.add("js");</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300..600&family=Geist+Mono:wght@400;500&family=Manjari:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300..600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Manjari:wght@400;700&text={{ML_TEXT}}&display=swap" rel="stylesheet">
 <style>
 /* Direction: light liquid glass floating on water.
    A watercolour fluid simulation is the page's water; frosted glass panels sit on it;
@@ -24,17 +25,10 @@
   --ink: #0B0B0B;
   --ink-soft: #383838;
   --ink-mute: #404040;
-  --emerald: var(--black);
-  --gold: var(--black);
-  --kanakambaram: var(--black);
   --line: rgba(0, 0, 0, 0.12);
-
-  --glass-bg: linear-gradient(140deg, rgba(255,255,255,.74), rgba(255,255,255,.46));
-  --glass-shadow: inset 0 1px 1px rgba(255,255,255,.95), inset 0 -1px 1px rgba(0,0,0,.05), 0 1px 2px rgba(0,0,0,.06);
 
   --serif: "Instrument Serif", "Iowan Old Style", Georgia, serif;
   --sans: "Geist", "Helvetica Neue", Arial, sans-serif;
-  --mono: "Geist Mono", ui-monospace, Menlo, monospace;
   --ml: "Manjari", "Noto Sans Malayalam", sans-serif;
 
   --gutter: clamp(18px, 4.5vw, 72px);
@@ -61,7 +55,7 @@ section { scroll-margin-top: 96px; }
 
 .label { font: 500 12.5px/1.4 var(--sans); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-mute); }
 .heading { font-family: var(--serif); font-size: clamp(48px, 6.4vw, 96px); line-height: .98; letter-spacing: -0.015em; }
-.heading em { font-style: italic; color: var(--emerald); }
+.heading em { font-style: italic; color: var(--black); }
 
 /* ---------- Liquid glass ---------- */
 /* Glass. Large panels do not blur what is behind them live (re-blurring moving water every
@@ -154,10 +148,10 @@ section { scroll-margin-top: 96px; }
   box-shadow: inset 0 2px 2px #fff, inset 0 -10px 30px rgba(0,0,0,.06), 0 30px 60px -30px rgba(0,0,0,.45), 0 0 0 1px rgba(0,0,0,.08);
 }
 .loader-water { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-.loader-pct { position: absolute; inset: 0; display: grid; place-items: center; font: 500 26px var(--mono); color: var(--ink); font-variant-numeric: tabular-nums; }
+.loader-pct { position: absolute; inset: 0; display: grid; place-items: center; font: 500 26px var(--sans); color: var(--ink); font-variant-numeric: tabular-nums; }
 .loader-gloss { position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(60% 40% at 32% 22%, rgba(255,255,255,.95), rgba(255,255,255,0) 70%); pointer-events: none; }
 .loader-names { font-family: var(--serif); font-size: clamp(34px, 5vw, 52px); line-height: 1; }
-.loader-names i { color: var(--gold); }
+.loader-names i { color: var(--black); }
 .loader-date { margin-top: -12px; }
 
 /* ---------- Water-drop cursor ----------
@@ -174,7 +168,7 @@ section { scroll-margin-top: 96px; }
 .has-lens .lens, .has-lens .lens-shadow { opacity: 1; }
 .has-lens, .has-lens * { cursor: none !important; }
 .has-touch-lens, .has-touch-lens * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
-.lens canvas, .lens-shadow canvas { position: absolute; left: 0; top: 0; display: block; }
+.lens canvas { position: absolute; left: 0; top: 0; display: block; }
 .lens-page, .lens-fixed { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
 .lens-fixed { width: 100vw; height: 100vh; }
 .lens-page *, .lens-fixed * { animation: none !important; transition: none !important; }
@@ -186,21 +180,20 @@ section { scroll-margin-top: 96px; }
 .nav { position: fixed; left: 50%; top: 16px; transform: translateX(-50%); z-index: 60; width: min(var(--max), 100% - 2 * var(--gutter)); }
 .nav-inner { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 8px 8px 8px 22px; border-radius: 999px; }
 .monogram { font-family: var(--serif); font-size: 26px; line-height: 1; text-decoration: none; }
-.monogram i { color: var(--gold); padding-inline: 2px; }
+.monogram i { color: var(--black); padding-inline: 2px; }
 .nav-links { display: flex; align-items: center; gap: 4px; list-style: none; margin: 0; padding: 0; }
 .nav-links a:not(.btn) { display: inline-block; padding: 10px 16px; border-radius: 999px; font: 500 14.5px var(--sans); text-decoration: none; transition: background-color .25s; }
 .nav-links a:not(.btn):hover { background: rgba(255,255,255,.75); }
 .nav-links .btn { padding: 12px 20px; font-size: 14.5px; }
-@media (max-width: 860px) {
-  .nav-links li:not(:last-child) { display: none; }
-  .nav { top: max(12px, env(safe-area-inset-top)); will-change: transform; }
-}
+@media (max-width: 860px) { .nav { top: max(12px, env(safe-area-inset-top)); will-change: transform; } }
+@media (max-width: 860px) and (min-height: 501px) { .nav-links li:not(:last-child) { display: none; } }
+@media (max-height: 500px) { .nav-links a:not(.btn) { padding-inline: 12px; } }
 
 /* ---------- Dock: a liquid-glass tab bar for phones and tablets ----------
    A black droplet slides between sections on two springs (front edge stiffer than the back), so it stretches
    as it travels like a drop dragged across glass. The white labels live in a copy clipped to the droplet. */
 .dock { display: none; }
-@media (max-width: 860px) {
+@media (max-width: 860px) and (min-height: 501px) {
   .dock {
     display: block; position: fixed; z-index: 60; left: 50%; bottom: max(12px, env(safe-area-inset-bottom));
     width: min(560px, 100% - 24px); transform: translateX(-50%); will-change: transform;
@@ -223,11 +216,11 @@ section { scroll-margin-top: 96px; }
 .hero-grid { display: grid; grid-template-columns: 7fr 5fr; gap: clamp(28px, 5vw, 80px); align-items: center; }
 .hero-copy { display: grid; gap: 26px; justify-items: start; }
 .chip { display: inline-flex; align-items: center; gap: 12px; padding: 10px 18px; border-radius: 999px; font: 500 14px var(--sans); }
-.chip .ml { font-family: var(--ml); font-weight: 700; font-size: 16px; color: var(--gold); }
+.chip .ml { font-family: var(--ml); font-weight: 700; font-size: 16px; color: var(--black); }
 .chip .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--black); box-shadow: 0 0 0 4px rgba(0,0,0,.12); }
 .names { font-family: var(--serif); font-size: clamp(76px, 11vw, 184px); line-height: .88; letter-spacing: -0.02em; }
 .names .line { display: block; overflow: hidden; padding: 0 .12em .22em 0; margin-bottom: -.16em; }
-.names .amp { font-style: italic; color: var(--gold); font-size: .62em; margin-right: .12em; }
+.names .amp { font-style: italic; color: var(--black); font-size: .62em; margin-right: .12em; }
 .names .char { display: inline-block; }
 .names .char { will-change: transform; }
 .hero-lede { font-size: clamp(18px, 1.6vw, 21px); line-height: 1.55; color: var(--ink-soft); max-width: 34ch; }
@@ -246,9 +239,8 @@ section { scroll-margin-top: 96px; }
 .fact + .fact { border-left: 1px solid var(--line); }
 .fact b { font: 400 clamp(19px, 1.6vw, 23px)/1.25 var(--serif); }
 .facts-bar .btn { margin: 6px; }
-.hero-hint { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-top: 18px; color: var(--ink-mute); font-size: 14px; }
+.hero-hint { display: flex; justify-content: flex-end; margin-top: 18px; color: var(--ink-mute); font-size: 14px; }
 button.hero-hint { border: 0; background: none; padding: 8px 0; cursor: pointer; text-decoration: underline; text-underline-offset: 4px; text-decoration-color: rgba(0,0,0,.3); }
-.hero-hint i { flex: none; width: 10px; height: 10px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff, rgba(0,0,0,.35)); box-shadow: 0 2px 4px rgba(0,0,0,.25); }
 @media (max-width: 900px) {
   .hero { padding-top: 104px; }
   .hero-grid { grid-template-columns: 1fr; }
@@ -266,16 +258,16 @@ button.hero-hint { border: 0; background: none; padding: 8px 0; cursor: pointer;
 .marquee { margin-block: 10px; padding-block: 18px; overflow: hidden; border-radius: 0; }
 .marquee-track { display: flex; width: max-content; will-change: transform; }
 .marquee-item { display: flex; align-items: center; gap: 36px; padding-right: 36px; white-space: nowrap; font: 400 clamp(30px, 4vw, 52px)/1.15 var(--serif); }
-.marquee-item em { color: var(--gold); }
-.marquee-item .ml { font-family: var(--ml); font-size: .62em; color: var(--emerald); }
+.marquee-item em { color: var(--black); }
+.marquee-item .ml { font-family: var(--ml); font-size: .62em; color: var(--black); }
 .marquee-item .drop { width: 12px; height: 12px; border-radius: 50%; background: var(--black); flex: none; }
 
 /* ---------- Invitation ---------- */
 .invite-panel { display: grid; grid-template-columns: 1.15fr .85fr; gap: clamp(28px, 5vw, 72px); padding: clamp(28px, 5vw, 72px); }
 .invite-copy { display: grid; gap: 24px; align-content: start; }
 .statement { font: 400 clamp(34px, 3.9vw, 58px)/1.1 var(--serif); letter-spacing: -0.01em; }
-.statement em { color: var(--emerald); }
-.ml-line { font-family: var(--ml); font-size: 21px; color: var(--gold); }
+.statement em { color: var(--black); }
+.ml-line { font-family: var(--ml); font-size: 21px; color: var(--black); }
 .invite-side { display: grid; gap: 22px; align-content: start; }
 .odometer { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 .odo-unit { display: grid; gap: 8px; justify-items: center; padding: 18px 8px 14px; border-radius: 22px; background: var(--black); color: var(--white); box-shadow: inset 0 1px 0 rgba(255,255,255,.22), 0 18px 30px -18px rgba(0,0,0,.7); }
@@ -285,7 +277,7 @@ button.hero-hint { border: 0; background: none; padding: 8px 0; cursor: pointer;
 .odo-col span { height: 1em; text-align: center; }
 .count-done { font: italic 400 34px var(--serif); }
 @media (max-width: 900px) { .invite-panel { grid-template-columns: 1fr; } }
-@media (max-width: 420px) { .odometer { gap: 8px; } .odo-unit { padding-inline: 4px; } .odo-unit .label { font-size: 11.5px; letter-spacing: .08em; } }
+@media (max-width: 420px) { .odometer { gap: 8px; } .odo-unit { padding-inline: 4px; } .odo-unit .label { font-size: 12.5px; letter-spacing: .04em; } }
 
 /* ---------- The couple: pinned scroll ---------- */
 .duo-track { position: relative; height: 300vh; }
@@ -297,7 +289,14 @@ button.hero-hint { border: 0; background: none; padding: 8px 0; cursor: pointer;
 }
 .duo-fig { position: absolute; left: 50%; top: 60%; will-change: transform; padding: 10px; border-radius: 26px; }
 .duo-fig img { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; border-radius: 18px; }
-.duo-portrait { width: clamp(150px, 20vw, 300px); }
+.duo-portrait { width: clamp(150px, 20vw, 300px); width: clamp(120px, min(20vw, 34svh), 300px); }
+@media (min-width: 761px) and (orientation: portrait) { .duo-portrait { width: min(32vw, 300px); } }
+@media (max-height: 500px) {
+  .duo-titles .chip { display: none; }
+  .duo-fig { top: 58%; }
+  .duo-word { font-size: 40px; bottom: calc(100% + 8px); }
+  .duo-portrait figcaption { flex-direction: column; gap: 4px; padding-inline: 4px; }
+}
 .duo-portrait figcaption { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 12px 8px 4px; }
 .duo-portrait figcaption b { font: 400 clamp(22px, 2vw, 30px)/1 var(--serif); }
 .duo-together { z-index: 2; opacity: 0; }
@@ -306,9 +305,9 @@ button.hero-hint { border: 0; background: none; padding: 8px 0; cursor: pointer;
 .is-static .duo-track { height: auto; }
 .is-static .duo-stage { position: relative; height: auto; min-height: 100vh; }
 @media (max-width: 760px) {
-  .duo-portrait { width: 38vw; padding: 6px; border-radius: 18px; }
+  .duo-portrait { width: 38vw; width: min(38vw, 34svh); padding: 6px; border-radius: 18px; }
   .duo-portrait figcaption { flex-direction: column; gap: 4px; padding-inline: 4px; }
-  .duo-portrait figcaption .label { font-size: 11.5px; }
+  .duo-portrait figcaption .label { font-size: 12.5px; }
 }
 
 /* ---------- Programme ---------- */
@@ -331,6 +330,7 @@ button.hero-hint { border: 0; background: none; padding: 8px 0; cursor: pointer;
 .table-actions { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
 .desk { position: relative; height: clamp(560px, 76vh, 760px); overflow: hidden; touch-action: pan-y; }
 @media (max-width: 600px) { .desk { height: clamp(700px, 88svh, 800px); } .desk .print { --w: 26vw; } }
+@media (min-width: 601px) and (max-width: 1100px) and (orientation: portrait) { .desk { height: clamp(700px, 72svh, 900px); } .desk .print { --w: clamp(130px, 18vw, 176px); } }
 .desk-prints { display: flex; flex-wrap: wrap; justify-content: center; gap: 18px; padding: 32px; }
 .print {
   --w: clamp(100px, 12.5vw, 176px);
@@ -340,7 +340,7 @@ button.hero-hint { border: 0; background: none; padding: 8px 0; cursor: pointer;
   user-select: none; -webkit-user-select: none; touch-action: none;
 }
 .print img { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; border-radius: 3px; pointer-events: none; -webkit-user-drag: none; }
-.print span { display: flex; justify-content: space-between; gap: 8px; padding: 10px 2px 12px; font: 500 12px var(--sans); color: var(--ink-soft); }
+.print span { display: flex; justify-content: space-between; gap: 8px; padding: 10px 2px 12px; font: 500 12.5px var(--sans); color: var(--ink-soft); }
 .print span em { font-style: normal; }
 .print.is-held { cursor: grabbing; }
 .desk.is-live .desk-prints { padding: 0; }
@@ -358,17 +358,17 @@ button.hero-hint { border: 0; background: none; padding: 8px 0; cursor: pointer;
 .venue-panel { display: grid; grid-template-columns: 7fr 5fr; gap: clamp(32px, 6vw, 96px); align-items: center; padding: clamp(28px, 5vw, 72px); }
 .venue-copy { display: grid; gap: 26px; }
 .venue-name { font: 400 clamp(60px, 7.6vw, 118px)/.95 var(--serif); letter-spacing: -0.02em; }
-.venue-name em { color: var(--emerald); }
+.venue-name em { color: var(--black); }
 .venue-lede { font-size: 18px; color: var(--ink-soft); max-width: 46ch; }
 .venue-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 32px; border-top: 1px solid var(--line); }
 .venue-facts div { display: grid; gap: 4px; padding-block: 16px; border-bottom: 1px solid var(--line); }
 .venue-facts dd { font: 400 20px/1.35 var(--serif); }
 .venue-facts a { text-underline-offset: 4px; text-decoration-color: rgba(24,32,27,.3); }
 .venue-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
-.copy-status { font-size: 15px; color: var(--emerald); min-height: 1.5em; margin-top: -10px; }
+.copy-status { font-size: 15px; color: var(--black); min-height: 1.5em; margin-top: -10px; }
 .tilt-wrap { perspective: 1100px; display: grid; justify-items: center; }
 .qr-card {
-  --rx: 0deg; --ry: 0deg; --gx: 50%; --gy: 50%; --glare: 0;
+  --gx: 50%; --gy: 50%; --glare: 0;
   position: relative; width: min(100%, 380px); padding: 30px; border-radius: 30px; text-decoration: none;
   display: grid; gap: 18px; justify-items: center; text-align: center;
   background: rgba(255,255,255,.86); box-shadow: inset 0 1px 1px #fff, inset 0 0 0 1px rgba(0,0,0,.08), 0 50px 80px -40px rgba(0,0,0,.5);
@@ -386,14 +386,14 @@ button.hero-hint { border: 0; background: none; padding: 8px 0; cursor: pointer;
 .finale-orb { width: min(100%, 400px); justify-self: center; }
 .finale-copy { display: grid; gap: 24px; justify-items: start; }
 .finale-line { font: 400 clamp(46px, 5.6vw, 86px)/1 var(--serif); letter-spacing: -0.015em; }
-.finale-line em { color: var(--emerald); }
-.signature { font: italic 400 clamp(28px, 2.6vw, 36px) var(--serif); color: var(--gold); }
+.finale-line em { color: var(--black); }
+.signature { font: italic 400 clamp(28px, 2.6vw, 36px) var(--serif); color: var(--black); }
 #petal-canvas { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 90; }
 @media (max-width: 900px) { .finale-panel { grid-template-columns: 1fr; } }
 
 footer { padding-block: 24px 40px; }
 .foot { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 14px 28px; padding: 18px 26px; border-radius: 999px; }
-.foot .ml { font-family: var(--ml); color: var(--gold); font-size: 18px; }
+.foot .ml { font-family: var(--ml); color: var(--black); font-size: 18px; }
 @media (max-width: 600px) { .foot { border-radius: 26px; justify-content: center; text-align: center; } }
 
 @media (prefers-reduced-motion: reduce) {
@@ -475,7 +475,7 @@ footer { padding-block: 24px 40px; }
 
 <div class="marquee glass" aria-hidden="true">
   <div class="marquee-track" id="marquee-track">
-    <div class="marquee-item">Sreejith <em>&amp;</em> Jestina <i class="drop"></i> 10 · 01 · 2027 <i class="drop"></i> Enchanted Woods <i class="drop"></i> <span class="ml">വിവാഹം</span> <i class="drop"></i></div>
+    <div class="marquee-item">Sreejith <em>&amp;</em> Jestina <i class="drop"></i> 10 · 01 · 2027 <i class="drop"></i> Enchanted Woods <i class="drop"></i> <span class="ml" lang="ml">വിവാഹം</span> <i class="drop"></i></div>
   </div>
 </div>
 
@@ -559,17 +559,17 @@ footer { padding-block: 24px 40px; }
     </div>
     <div class="desk glass has-sheen" id="desk">
       <div class="desk-prints" id="desk-prints">
-        <button class="print" type="button" data-full="photos/roll-01.jpg"><img src="photos/roll-01.jpg" alt="Sreejith and Jestina looking at each other beside a brick wall" width="719" height="959" loading="lazy"><span><b>Nº 01</b><em>Brick &amp; vine</em></span></button>
-        <button class="print" type="button" data-full="photos/roll-02.jpg"><img src="photos/roll-02.jpg" alt="Sreejith and Jestina in front of bamboo leaves" width="719" height="959" loading="lazy"><span><b>Nº 02</b><em>Bamboo</em></span></button>
-        <button class="print" type="button" data-full="photos/roll-03.jpg"><img src="photos/roll-03.jpg" alt="Sreejith and Jestina smiling under green leaves" width="719" height="959" loading="lazy"><span><b>Nº 03</b><em>Afternoon</em></span></button>
-        <button class="print" type="button" data-full="photos/roll-04.jpg"><img src="photos/roll-04.jpg" alt="Jestina and Sreejith holding bouquets" width="639" height="959" loading="lazy"><span><b>Nº 04</b><em>Bouquets</em></span></button>
-        <button class="print" type="button" data-full="photos/roll-05.jpg"><img src="photos/roll-05.jpg" alt="Sreejith and Jestina posing playfully" width="540" height="959" loading="lazy"><span><b>Nº 05</b><em>Mischief</em></span></button>
-        <button class="print" type="button" data-full="photos/closing.jpg"><img src="photos/closing.jpg" alt="Sreejith and Jestina in traditional clothes, smiling at each other" width="719" height="959" loading="lazy"><span><b>Nº 06</b><em>Kasavu</em></span></button>
-        <button class="print" type="button" data-full="photos/roll-07.jpg"><img src="photos/roll-07.jpg" alt="Sreejith and Jestina with their heads together, smiling at the camera" width="719" height="959" loading="lazy"><span><b>Nº 07</b><em>Side by side</em></span></button>
-        <button class="print" type="button" data-full="photos/roll-08.jpg"><img src="photos/roll-08.jpg" alt="Sreejith and Jestina standing together with misty hills behind them" width="539" height="959" loading="lazy"><span><b>Nº 08</b><em>Misty hills</em></span></button>
-        <button class="print" type="button" data-full="photos/roll-09.jpg"><img src="photos/roll-09.jpg" alt="Sreejith and Jestina taking a mirror selfie together" width="722" height="959" loading="lazy"><span><b>Nº 09</b><em>Mirror</em></span></button>
-        <button class="print" type="button" data-full="photos/roll-10.jpg"><img src="photos/roll-10.jpg" alt="Sreejith and Jestina taking a selfie on a lawn, Jestina in a red and black saree" width="719" height="959" loading="lazy"><span><b>Nº 10</b><em>On the lawn</em></span></button>
-        <button class="print" type="button" data-full="photos/roll-11.jpg"><img src="photos/roll-11.jpg" alt="Jestina resting her chin on her hand beside a smiling Sreejith" width="439" height="525" loading="lazy"><span><b>Nº 11</b><em>Snapshot</em></span></button>
+        <button class="print" type="button" data-full="photos/roll-01.jpg"><img src="photos/thumb/roll-01.jpg" alt="Sreejith and Jestina looking at each other beside a brick wall" width="719" height="959" loading="lazy"><span><b>Nº 01</b><em>Brick &amp; vine</em></span></button>
+        <button class="print" type="button" data-full="photos/roll-02.jpg"><img src="photos/thumb/roll-02.jpg" alt="Sreejith and Jestina in front of bamboo leaves" width="719" height="959" loading="lazy"><span><b>Nº 02</b><em>Bamboo</em></span></button>
+        <button class="print" type="button" data-full="photos/roll-03.jpg"><img src="photos/thumb/roll-03.jpg" alt="Sreejith and Jestina smiling under green leaves" width="719" height="959" loading="lazy"><span><b>Nº 03</b><em>Afternoon</em></span></button>
+        <button class="print" type="button" data-full="photos/roll-04.jpg"><img src="photos/thumb/roll-04.jpg" alt="Jestina and Sreejith holding bouquets" width="639" height="959" loading="lazy"><span><b>Nº 04</b><em>Bouquets</em></span></button>
+        <button class="print" type="button" data-full="photos/roll-05.jpg"><img src="photos/thumb/roll-05.jpg" alt="Sreejith and Jestina posing playfully" width="540" height="959" loading="lazy"><span><b>Nº 05</b><em>Mischief</em></span></button>
+        <button class="print" type="button" data-full="photos/closing.jpg"><img src="photos/thumb/closing.jpg" alt="Sreejith and Jestina in traditional clothes, smiling at each other" width="719" height="959" loading="lazy"><span><b>Nº 06</b><em>Kasavu</em></span></button>
+        <button class="print" type="button" data-full="photos/roll-07.jpg"><img src="photos/thumb/roll-07.jpg" alt="Sreejith and Jestina with their heads together, smiling at the camera" width="719" height="959" loading="lazy"><span><b>Nº 07</b><em>Side by side</em></span></button>
+        <button class="print" type="button" data-full="photos/roll-08.jpg"><img src="photos/thumb/roll-08.jpg" alt="Sreejith and Jestina standing together with misty hills behind them" width="539" height="959" loading="lazy"><span><b>Nº 08</b><em>Misty hills</em></span></button>
+        <button class="print" type="button" data-full="photos/roll-09.jpg"><img src="photos/thumb/roll-09.jpg" alt="Sreejith and Jestina taking a mirror selfie together" width="722" height="959" loading="lazy"><span><b>Nº 09</b><em>Mirror</em></span></button>
+        <button class="print" type="button" data-full="photos/roll-10.jpg"><img src="photos/thumb/roll-10.jpg" alt="Sreejith and Jestina taking a selfie on a lawn, Jestina in a red and black saree" width="719" height="959" loading="lazy"><span><b>Nº 10</b><em>On the lawn</em></span></button>
+        <button class="print" type="button" data-full="photos/roll-11.jpg"><img src="photos/thumb/roll-11.jpg" alt="Jestina resting her chin on her hand beside a smiling Sreejith" width="439" height="525" loading="lazy"><span><b>Nº 11</b><em>Snapshot</em></span></button>
       </div>
     </div>
   </div>
@@ -577,7 +577,7 @@ footer { padding-block: 24px 40px; }
 
 <dialog class="lightbox" id="lightbox" aria-label="Photograph">
   <button class="btn btn-glass lightbox-close" id="lightbox-close" type="button">Close</button>
-  <img id="lightbox-img" src="photos/roll-01.jpg" alt="">
+  <img id="lightbox-img" alt="">
 </dialog>
 
 <section class="pad" id="venue" aria-labelledby="venue-title" style="padding-top:0">
@@ -710,7 +710,7 @@ class Spring {
 const Frame = { now: 0, dt: 1 / 60, scrollX: 0, scrollY: 0, scrollVelocity: 0, scrollSpeed: 0, scrollAccel: 0, vw: window.innerWidth, vh: window.innerHeight };
 const Page = { ready: false };
 const Ticker = (() => {
-  let jobs = [];
+  const jobs = [], active = [];
   let raf = 0, last = 0, running = false;
   function loop(now) {
     const dt = Math.min(0.05, (now - last) / 1000 || 1 / 60);
@@ -721,8 +721,9 @@ const Ticker = (() => {
     Frame.scrollAccel = lerp(Frame.scrollAccel, (speed - Frame.scrollSpeed) / dt, 0.3);
     Frame.scrollSpeed = speed;
     Frame.scrollY = y; Frame.scrollX = window.scrollX; Frame.now = now; Frame.dt = dt;
-    if (jobs.some((job) => job.done)) jobs = jobs.filter((job) => !job.done);
-    const active = jobs.filter((job) => !job.active || job.active());
+    for (let i = jobs.length - 1; i >= 0; i--) if (jobs[i].done) jobs.splice(i, 1);
+    active.length = 0;
+    for (const job of jobs) if (!job.active || job.active()) active.push(job);
     for (const job of active) if (job.read) job.read(dt, now);
     for (const job of active) if (job.write) job.write(dt, now);
     raf = requestAnimationFrame(loop);
@@ -1689,11 +1690,22 @@ function paintOptics(ctx, pts, c, R) {
 /**
  * A live, id-free copy of the page that mirrors style, class and text changes.
  * Sticky elements are placed from cached geometry, so the mirror never forces a layout.
+ * Only the blocks under the drop are painted; style changes inside hidden blocks are caught up when they show again.
  */
 function createPageMirror(pageLayer, fixedLayer) {
   const sources = [...document.querySelectorAll("body > header, body > .marquee, body > main, body > footer")];
   const navs = [...document.querySelectorAll("body > nav")];
   const map = new Map();
+  const MIRRORED = ["style", "class", "hidden"];
+  const BLOCKS = "body > header, body > .marquee, body > main > section, body > footer";
+  const blocks = [...document.querySelectorAll(BLOCKS)];
+  const owners = new WeakMap(); // original element → its block, or null outside one
+  const ownerOf = (el) => {
+    let block = owners.get(el);
+    if (block === undefined) { block = el.closest(BLOCKS); owners.set(el, block); }
+    return block;
+  };
+  const hidden = new Set(), stale = new Set();
   let stickies = [];
 
   const prepare = (clone) => {
@@ -1740,13 +1752,25 @@ function createPageMirror(pageLayer, fixedLayer) {
   }
   Geometry.onMeasure(measureStickies);
 
+  const copyAttribute = (orig, clone, name) => {
+    const value = orig.getAttribute(name);
+    if (value === null) clone.removeAttribute(name); else if (clone.getAttribute(name) !== value) clone.setAttribute(name, value);
+  };
+  const catchUp = (block) => {
+    stale.delete(block);
+    [block, ...block.querySelectorAll("*")].forEach((orig) => {
+      const clone = map.get(orig);
+      if (clone) MIRRORED.forEach((name) => copyAttribute(orig, clone, name));
+    });
+  };
   const observer = new MutationObserver((mutations) => {
     for (const m of mutations) {
       if (m.type === "attributes") {
         const clone = map.get(m.target);
         if (!clone) continue;
-        const value = m.target.getAttribute(m.attributeName);
-        if (value === null) clone.removeAttribute(m.attributeName); else clone.setAttribute(m.attributeName, value);
+        const block = ownerOf(m.target);
+        if (block && hidden.has(block)) { stale.add(block); continue; }
+        copyAttribute(m.target, clone, m.attributeName);
         continue;
       }
       const target = m.target.nodeType === 1 ? m.target : m.target.parentElement;
@@ -1755,25 +1779,25 @@ function createPageMirror(pageLayer, fixedLayer) {
     }
   });
   [...sources, ...navs].forEach((root) => observer.observe(root, {
-    subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ["style", "class", "hidden"],
+    subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: MIRRORED,
   }));
 
   build();
   // Only the blocks under the drop are painted in the copy: the rest stay laid out (so nothing moves) but hidden.
   // A whole page scaled 1.8× is a very large layer, which some phone browsers refuse to draw.
-  const blocks = [...document.querySelectorAll("body > header, body > .marquee, body > main > section, body > footer")];
   blocks.forEach((el) => Geometry.track(el));
-  const shownState = new Map();
   return {
     cull(docY, reach) {
       for (const orig of blocks) {
         const clone = map.get(orig), r = Geometry.get(orig);
         if (!clone || !r) continue;
         const show = r.top < docY + reach && r.top + r.height > docY - reach;
-        if (shownState.get(clone) !== show) { clone.style.visibility = show ? "" : "hidden"; shownState.set(clone, show); }
+        if (show === !hidden.has(orig)) continue;
+        if (show) { hidden.delete(orig); if (stale.has(orig)) catchUp(orig); clone.style.visibility = ""; }
+        else { hidden.add(orig); clone.style.visibility = "hidden"; }
       }
     },
-    rebuild() { shownState.clear(); build(); },
+    rebuild() { hidden.clear(); stale.clear(); build(); },
     placeStickies(scrollY) {
       for (const s of stickies) {
         const docTop = clamp(scrollY + s.top, s.natural, Math.max(s.natural, s.limit));
@@ -1856,7 +1880,7 @@ function initLens(fluid) {
       keepOnScreen(Object.assign(rest, { x: pos.x, y: pos.y }));
     };
     window.addEventListener("touchstart", (e) => {
-      if (e.touches.length !== 1 || document.querySelector("dialog[open]")) { stop(); return; }
+      if (e.touches.length !== 1 || lightbox.open) { stop(); return; }
       const t = e.touches[0];
       touch.x0 = touch.x = t.clientX; touch.y0 = touch.y = t.clientY;
       touch.t0 = performance.now(); touch.moved = false;
@@ -1904,7 +1928,8 @@ function initLens(fluid) {
     return keepOnScreen(aimAt);
   };
 
-  const shown = () => (touch.on || rest.on || (placed && Pointer.active && Pointer.type === "mouse")) && !document.querySelector("dialog[open]");
+  const lightbox = $("lightbox");
+  const shown = () => (touch.on || rest.on || (placed && Pointer.active && Pointer.type === "mouse")) && !lightbox.open;
 
   if (waterCtx) {
     // the water under the drop, magnified by the same zoom as the page (uv origin is bottom-left)
@@ -2483,8 +2508,8 @@ function initDesk(openLightbox) {
     const { w: W, h: H } = size;
     const rand = seeded(7);
     const { w, h } = items[0];
-    const cols = clamp(Math.floor(W / (w * 1.06)), 2, items.length);
-    const rows = Math.ceil(items.length / cols);
+    const fit = clamp(Math.floor(W / (w * 1.06)), 2, items.length);
+    const rows = Math.ceil(items.length / fit), cols = Math.ceil(items.length / rows);
     const cellW = W / cols, cellH = H / rows;
     // a tilted print is wider than an upright one: tilt only as far as the free space in its cell allows
     const tilt = clamp(Math.min((cellW - w) / h, (cellH - h) / w), 0.04, 0.32);
