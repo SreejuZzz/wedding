@@ -291,9 +291,10 @@ button.hero-hint { border: 0; background: none; padding: 8px 0; cursor: pointer;
 .duo-track { position: relative; height: 300vh; }
 .duo-stage { position: sticky; top: 0; height: 100vh; height: 100svh; overflow: hidden; perspective: 1400px; perspective-origin: 50% 55%; }
 .duo-titles { position: absolute; left: 0; right: 0; top: 108px; text-align: center; pointer-events: none; }
-.duo-title { display: grid; justify-items: center; font: 400 clamp(52px, 8vw, 124px)/1 var(--serif); letter-spacing: -0.02em; margin-top: 10px; }
-.duo-title span { grid-area: 1 / 1; will-change: opacity, transform; }
-.duo-title em { color: var(--emerald); }
+.duo-word {
+  position: absolute; left: 0; right: 0; bottom: calc(100% + 14px); text-align: center; pointer-events: none;
+  font: italic 400 clamp(46px, 5.6vw, 92px)/1 var(--serif); letter-spacing: -0.02em; color: var(--ink);
+}
 .duo-fig { position: absolute; left: 50%; top: 60%; will-change: transform; padding: 10px; border-radius: 26px; }
 .duo-fig img { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; border-radius: 18px; }
 .duo-portrait { width: clamp(150px, 20vw, 300px); }
@@ -506,20 +507,20 @@ footer { padding-block: 24px 40px; }
     <div class="duo-stage">
       <div class="duo-titles">
         <span class="chip glass">The couple</span>
-        <h2 class="duo-title" id="couple-title">
-          <span id="duo-title-a">Two paths,</span>
-          <span id="duo-title-b"><em>one forest.</em></span>
-        </h2>
+        <h2 class="sr-only" id="couple-title">Him, her and us</h2>
       </div>
       <figure class="duo-fig duo-portrait glass" id="duo-groom">
+        <span class="duo-word" aria-hidden="true">Him</span>
         <img src="photos/sreejith-bw.jpg" alt="Black and white portrait of Sreejith" width="798" height="959" loading="lazy">
         <figcaption><b>Sreejith</b><span class="label">The groom</span></figcaption>
       </figure>
       <figure class="duo-fig duo-portrait glass" id="duo-bride">
+        <span class="duo-word" aria-hidden="true">Her</span>
         <img src="photos/jestina-bw.jpg" alt="Black and white portrait of Jestina wearing jasmine in her hair" width="719" height="959" loading="lazy">
         <figcaption><b>Jestina</b><span class="label">The bride</span></figcaption>
       </figure>
       <figure class="duo-fig duo-portrait duo-together glass" id="duo-together">
+        <span class="duo-word" aria-hidden="true">Us</span>
         <img src="photos/together-bw.jpg" alt="Black and white photo of Jestina and Sreejith smiling, each holding a bouquet" width="639" height="959" loading="lazy">
         <figcaption><b>Together</b><span class="label">10 · 01 · 2027</span></figcaption>
       </figure>
@@ -2322,20 +2323,24 @@ function initOdometer() {
 function initDuo() {
   const track = Geometry.track($("duo-track"));
   const groom = $("duo-groom"), bride = $("duo-bride"), together = $("duo-together");
-  const titleA = $("duo-title-a"), titleB = $("duo-title-b"), bar = $("duo-progress");
+  const bar = $("duo-progress");
   let pw = groom.offsetWidth;
   new ResizeObserver(() => { pw = groom.offsetWidth; last = -1; }).observe(groom);
   let last = -1;
 
-  // q = progress per element: { g: groom, b: bride, t: together, ti: titles, bar }
+  // q = progress per element: { g: groom, b: bride, t: together, bar }
   // Story: the two portraits start apart, turned toward each other in 3D. As you scroll they glide to the
   // centre, straighten and grow to the size of the "together" card, landing almost on top of each other;
   // there they dissolve completely while the together card (the same frame) fades up in their place.
   const lastVis = { g: "", b: "" };
   const captions = { g: groom.querySelector("figcaption"), b: bride.querySelector("figcaption"), t: together.querySelector("figcaption") };
+  const words = { g: groom.querySelector(".duo-word"), b: bride.querySelector(".duo-word"), t: together.querySelector(".duo-word") };
   const portrait = (el, key, p, side, startX, endScale) => {
     // names leave first, so the two captions never sit on top of each other while the cards overlap
-    captions[key].style.opacity = (1 - ease(span(p, 0.28, 0.48))).toFixed(3);
+    // "Him" / "Her" and the names leave first, so nothing written overlaps while the cards meet
+    const early = (1 - ease(span(p, 0.28, 0.48))).toFixed(3);
+    captions[key].style.opacity = early;
+    words[key].style.opacity = early;
     const move = ease(span(p, 0.04, 0.6));
     const fade = ease(span(p, 0.44, 0.72));
     const x = side * lerp(startX, pw * 0.07, move);
@@ -2355,21 +2360,17 @@ function initDuo() {
     const reveal = ease(span(q.t, 0.46, 0.8));
     together.style.opacity = reveal.toFixed(3);
     captions.t.style.opacity = ease(span(q.t, 0.64, 0.86)).toFixed(3);
+    words.t.style.opacity = ease(span(q.t, 0.56, 0.82)).toFixed(3);
     together.style.transform = `translate(-50%, -50%) translate3d(0, ${lerp(12, 0, reveal).toFixed(1)}px, ${lerp(-60, 0, reveal).toFixed(1)}px) scale(${lerp(endScale * 0.95, endScale, reveal).toFixed(4)})`;
-    const swap = span(q.ti, 0.42, 0.62);
-    titleA.style.opacity = (1 - swap).toFixed(3);
-    titleA.style.transform = `translate3d(0, ${(-swap * 30).toFixed(1)}px, 0)`;
-    titleB.style.opacity = swap.toFixed(3);
-    titleB.style.transform = `translate3d(0, ${((1 - swap) * 30).toFixed(1)}px, 0)`;
     bar.style.transform = `scaleX(${clamp(q.bar, 0, 1).toFixed(4)})`;
   };
 
-  const at = (p) => ({ g: p, b: p, t: p, ti: p, bar: p });
+  const at = (p) => ({ g: p, b: p, t: p, bar: p });
   if (REDUCED) { $("couple").classList.add("is-static"); render(at(1)); return; }
   render(at(0));
   // The scroll position pulls each element through its own spring: different masses, so the
   // groom, the bride and the photo of them together arrive with their own inertia.
-  const springs = { g: new Spring(0, 60, 14), b: new Spring(0, 46, 12.5), t: new Spring(0, 80, 17), ti: new Spring(0, 110, 21), bar: new Spring(0, 220, 30) };
+  const springs = { g: new Spring(0, 60, 14), b: new Spring(0, 46, 12.5), t: new Spring(0, 80, 17), bar: new Spring(0, 220, 30) };
   const keys = Object.keys(springs);
   const q = at(0);
   let jumped = false;

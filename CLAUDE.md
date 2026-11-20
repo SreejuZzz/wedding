@@ -82,8 +82,9 @@ To test with an installed Chrome instead: `CHROME_PATH=/usr/bin/google-chrome np
 ## Page sections (top to bottom)
 
 Loading screen (glass bubble fills with water to 100%, then drains away) → floating glass nav (+ bottom dock on phones) → hero (names, liquid orb photo, facts bar)
-→ velocity marquee → invitation + countdown + Add to calendar → "Two paths, one forest" pinned 3D scroll story (groom and bride glide
-  together, grow and dissolve completely into the "together" card; all three use the same glass card frame)
+→ velocity marquee → invitation + countdown + Add to calendar → "Him / Her / Us" pinned 3D scroll story ("Him" and "Her" ride above
+  the groom and bride cards; they glide together, grow and dissolve completely into the "together" card, which carries "Us";
+  all three use the same glass card frame)
 → programme → "A table of prints" (Matter.js) → venue + tilting QR card → finale with "Shower your blessings" → footer.
 
 ## Content status / open items
