@@ -88,6 +88,15 @@ To test with an installed Chrome instead: `CHROME_PATH=/usr/bin/google-chrome np
     water only judges its frame rate after `Page.shown`, and the lens builds its page copy ~1.2 s after that, when idle. The loader canvas
     clears only what it painted last frame. Reduced motion: one still drop, removed as soon as loading finishes.
     No percentage or text beyond the names and date.
+  - Physical response (`initBodies`, all devices, subtle): glass panels (`.facts-bar, .invite-panel, .programme, .venue-panel,
+    .finale-panel, .foot`) are plates on springs. A press is a force at the touch point (sinks ≤ 1.2 %, tilts ≤ 1.2° toward it, released
+    on lift or when scrolling starts); the page acceleration −m·a makes them lag ≤ ~6 px behind a flick (dead zone 300 px/s²); phone
+    tilt slides them ≤ 2.5 px downhill. `.programme-intro, .table-head` are lighter (lag more); countdown tiles and `.btn` (via the
+    `scale` property, so it composes with the magnetic pull) only give under a press. Desktop `.tilt-panel` hover lean lives here too.
+    Layers only while visible; transforms cleared at rest; the lens copy never gets its own layers.
+  - Phone venue (`initQrLift`, ≤ 760 px wide or ≤ 500 px tall): the QR card is a compact row; tapping it lifts a copy of the QR
+    (`#qr-lift`, outside `main` so it can sit above everything but the loader) to the centre on a spring over a veil; a tap or Escape
+    puts it back. Desktop: the card is still a link to the map.
   - Photo table: Matter.js rigid bodies seen from above (no gravity, table friction, collisions, throwing).
   - Petal shower: each petal is a falling plate (Andersen–Pesavento–Wang 2005 quasi-steady model: angle-of-attack drag, circulation lift,
     broadside torque, rotational damping), which flutters and tumbles by itself; drawn as a disc projected from its 3-D plane. The button blows

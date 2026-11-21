@@ -154,6 +154,7 @@ section { scroll-margin-top: 96px; }
 .lens, .lens-shadow { position: fixed; left: 0; top: 0; pointer-events: none; opacity: 0; transition: opacity .25s; }
 .lens { z-index: 151; overflow: hidden; contain: layout paint; background: var(--bg); will-change: transform; }
 .lens-page .sheen { display: none; }
+.lens-page *, .lens-fixed * { will-change: auto !important; }  /* the copy moves as one; no layers of its own */
 .lens-shadow {
   z-index: 150; width: 100px; height: 100px; margin: -50px 0 0 -50px; border-radius: 50%; will-change: transform;
   background: radial-gradient(closest-side, rgba(255,255,255,.75), rgba(255,255,255,.25) 38%, rgba(0,0,0,.14) 72%, rgba(0,0,0,0));
@@ -389,6 +390,20 @@ button.hero-hint { border: 0; background: none; padding: 8px 0; cursor: pointer;
 .qr svg { width: 100%; height: 100%; display: block; }
 .qr-title { font: italic 400 30px/1.1 var(--serif); transform: translateZ(22px); }
 @media (max-width: 900px) { .venue-panel { grid-template-columns: 1fr; } }
+/* Phones: the QR is for showing someone else, so it waits as a compact card and lifts to the centre when tapped */
+@media (max-width: 760px), (max-height: 500px) {
+  .tilt-wrap { justify-items: stretch; }
+  .qr-card { width: 100%; grid-template-columns: 84px minmax(0, 1fr); grid-template-areas: "qr label" "qr title"; justify-items: start; align-items: center; gap: 4px 18px; padding: 16px; border-radius: 24px; text-align: left; transform-style: flat; }
+  .qr-card .label { grid-area: label; align-self: end; }
+  .qr-card .qr { grid-area: qr; width: 84px; padding: 6px; border-radius: 12px; transform: none; }
+  .qr-card .qr-title { grid-area: title; align-self: start; font-size: 24px; transform: none; }
+  .qr-card.is-lifted .qr { visibility: hidden; }
+}
+.qr-lift { position: fixed; inset: 0; z-index: 160; display: none; place-items: center; padding: 0; border: 0; background: none; cursor: pointer; touch-action: none; -webkit-tap-highlight-color: transparent; }
+.qr-lift.is-on { display: grid; }
+.qr-veil { position: absolute; inset: 0; background: rgba(250,250,247,.82); opacity: 0; }
+.qr-big { position: relative; width: min(78vw, 340px, 84vh); aspect-ratio: 1; padding: 16px; border-radius: 26px; background: #fff; box-shadow: inset 0 0 0 1px rgba(0,0,0,.08), 0 40px 80px -30px rgba(0,0,0,.45); will-change: transform; }
+.qr-big svg { display: block; width: 100%; height: 100%; }
 
 /* ---------- Finale ---------- */
 .finale-panel { display: grid; grid-template-columns: 5fr 7fr; gap: clamp(32px, 6vw, 96px); align-items: center; padding: clamp(28px, 5vw, 72px); }
@@ -642,6 +657,8 @@ footer { padding-block: 24px 40px; }
     </div>
   </div>
 </footer>
+
+<button class="qr-lift" id="qr-lift" type="button" aria-label="Close the QR code"><span class="qr-veil"></span><span class="qr-big"></span></button>
 
 <div class="lens-shadow" id="lens-shadow" aria-hidden="true"></div>
 <div class="lens" id="lens" aria-hidden="true" inert>
@@ -2273,28 +2290,167 @@ function initLight() {
 }
 
 /** Large panels lean a few degrees toward the pointer on springs. */
-function initPanelTilt() {
-  if (!FINE_POINTER || REDUCED) return;
-  document.querySelectorAll(".tilt-panel").forEach((el) => {
-    const rx = new Spring(0, 90, 14), ry = new Spring(0, 90, 14);
-    let awake = false;
-    el.addEventListener("pointermove", (e) => {
+/* =====================================================================
+   Physical response. Every glass panel is a plate on springs: a press (finger or mouse button) is a force at
+   that point, so the plate sinks a little and tilts toward it, and springs back when released or when the page
+   starts to scroll. Things riding on the page feel its acceleration (the pseudo-force −m·a): they lag a few
+   pixels behind a flick and settle. On phones they also slide a little downhill with the tilt. Heavier panels,
+   lighter headings; countdown tiles and buttons give under the press. On desktop the tilt panels
+   still lean away from the mouse, as before.
+   ===================================================================== */
+function initBodies() {
+  if (REDUCED) return;
+  const ACC = 8000;                         // px/s²: a hard flick; anything stronger is clipped
+  const KINDS = {
+    plate: { lag: 0.0008, sway: 2.5, k: 121, c: 11, press: true, tilt: true },
+    light: { lag: 0.0012, sway: 3.5, k: 100, c: 10, press: false, tilt: false },
+    tile:  { lag: 0, sway: 0, k: 160, c: 12, press: true, tilt: false },   // rides with its panel; only gives under a press
+  };
+  const PRESS_TILT = 1.2;                   // degrees at the edge of a panel
+  const PRESS_DEPTH = 1.2;                  // percent the plate sinks under a press
+  const bodies = [];
+
+  function pressable(b, el) {
+    const at = (e) => {
       const r = el.getBoundingClientRect();
-      ry.target = ((e.clientX - r.left) / r.width - 0.5) * 4;
-      rx.target = (0.5 - (e.clientY - r.top) / r.height) * 3;
-      awake = true;
+      b.pu = clamp(((e.clientX - r.left) / r.width) * 2 - 1, -1, 1);
+      b.pv = clamp(((e.clientY - r.top) / r.height) * 2 - 1, -1, 1);
+    };
+    el.addEventListener("pointerdown", (e) => {
+      if (e.pointerType === "mouse" && e.button !== 0) return;
+      if (e.target.closest(".print, .qr-card")) return;   // those have their own physics
+      b.pressing = true; at(e);
     });
-    el.addEventListener("pointerleave", () => { rx.target = 0; ry.target = 0; awake = true; });
-    Ticker.add({
-      active: () => awake,
-      write(dt) {
-        el.style.transform = `perspective(1600px) rotateX(${rx.step(dt).toFixed(3)}deg) rotateY(${ry.step(dt).toFixed(3)}deg)`;
-        if (rx.settled && ry.settled && rx.target === 0 && ry.target === 0) { awake = false; el.style.transform = ""; }
-      },
-    });
+    el.addEventListener("pointermove", (e) => { if (b.pressing) at(e); });
+    const release = () => { b.pressing = false; };
+    for (const type of ["pointerup", "pointercancel", "pointerleave"]) el.addEventListener(type, release);
+  }
+
+  function addBody(el, kind) {
+    const cfg = KINDS[kind];
+    const b = {
+      el, cfg, vis: visibility(el), layered: false, last: "", pressing: false, pu: 0, pv: 0, hx: 0, hy: 0,
+      x: new Spring(0, cfg.k, cfg.c), y: new Spring(0, cfg.k, cfg.c),
+      rx: new Spring(0, 90, 14), ry: new Spring(0, 90, 14), d: new Spring(0, 260, 20),
+    };
+    b.springs = [b.x, b.y, b.rx, b.ry, b.d];
+    if (cfg.press) pressable(b, el);
+    if (cfg.tilt && FINE_POINTER && el.classList.contains("tilt-panel")) {
+      el.addEventListener("pointermove", (e) => {
+        if (e.pointerType !== "mouse") return;
+        const r = el.getBoundingClientRect();
+        b.hy = ((e.clientX - r.left) / r.width - 0.5) * 4;
+        b.hx = (0.5 - (e.clientY - r.top) / r.height) * 3;
+      });
+      el.addEventListener("pointerleave", () => { b.hx = b.hy = 0; });
+    }
+    bodies.push(b);
+  }
+  document.querySelectorAll(".facts-bar, .invite-panel, .programme, .venue-panel, .finale-panel, .foot").forEach((el) => addBody(el, "plate"));
+  document.querySelectorAll(".programme-intro, .table-head").forEach((el) => addBody(el, "light"));
+  document.querySelectorAll(".odo-unit").forEach((el) => addBody(el, "tile"));
+
+  // buttons only give under the press (`scale` composes with the magnetic pull on desktop)
+  const buttons = [...document.querySelectorAll(".btn")].filter((el) => !el.closest(".nav, .dock, .lightbox")).map((el) => {
+    const btn = { el, d: new Spring(0, 320, 18), pressing: false, last: "" };
+    el.addEventListener("pointerdown", (e) => { if (e.pointerType !== "mouse" || e.button === 0) btn.pressing = true; });
+    for (const type of ["pointerup", "pointercancel", "pointerleave"]) el.addEventListener(type, () => { btn.pressing = false; });
+    return btn;
+  });
+
+  Ticker.add({
+    write(dt) {
+      const raw = clamp(Frame.scrollAccel, -ACC, ACC);
+      const a = Math.abs(raw) < 300 ? 0 : raw;  // below this the lag would be under a quarter of a pixel
+      const mx = Motion.live ? Motion.x : 0, my = Motion.live ? Motion.y : 0;
+      for (const b of bodies) {
+        // a layer only while it is near the screen (it moves with every scroll then)
+        if (b.vis.visible !== b.layered) { b.layered = b.vis.visible; b.el.style.willChange = b.layered ? "transform" : ""; }
+        if (!b.vis.visible) continue;
+        const { cfg } = b;
+        b.y.target = a * cfg.lag + my * cfg.sway;
+        b.x.target = mx * cfg.sway;
+        b.rx.target = b.hx + (b.pressing && cfg.tilt ? -b.pv * PRESS_TILT : 0);
+        b.ry.target = b.hy + (b.pressing && cfg.tilt ? b.pu * PRESS_TILT : 0);
+        b.d.target = b.pressing ? PRESS_DEPTH : 0;
+        let still = true;
+        for (const sp of b.springs) { if (sp.settled) sp.snap(); else { sp.step(dt); still = false; } }
+        const rest = still && b.springs.every((sp) => Math.abs(sp.value) < 0.05);
+        let t = "";
+        if (!rest) {
+          const move = `translate3d(${b.x.value.toFixed(1)}px, ${b.y.value.toFixed(1)}px, 0)`;
+          const sink = `scale(${(1 - b.d.value / 100).toFixed(3)})`;
+          t = cfg.tilt ? `perspective(1600px) ${move} rotateX(${b.rx.value.toFixed(2)}deg) rotateY(${b.ry.value.toFixed(2)}deg) ${sink}` : `${move} ${sink}`;
+        }
+        if (t !== b.last) { b.el.style.transform = t; b.last = t; }
+      }
+      for (const btn of buttons) {
+        btn.d.target = btn.pressing ? 3 : 0;   // percent
+        if (btn.d.settled) { if (btn.last === "") continue; btn.d.snap(); }
+        else btn.d.step(dt);
+        const v = btn.d.settled && btn.d.value === 0 ? "" : (1 - btn.d.value / 100).toFixed(4);
+        if (v !== btn.last) { btn.el.style.scale = v; btn.last = v; }
+      }
+    },
   });
 }
 
+/* =====================================================================
+   Phones: the QR is for showing someone else. It waits as a compact card; a tap lifts it to the centre of the
+   screen on a spring (the page behind fades under a veil), and a tap anywhere puts it back where it came from.
+   ===================================================================== */
+function initQrLift() {
+  const card = $("qr-card"), small = card.querySelector(".qr"), lift = $("qr-lift");
+  const veil = lift.querySelector(".qr-veil"), big = lift.querySelector(".qr-big");
+  big.append(small.querySelector("svg").cloneNode(true));
+  const compact = window.matchMedia("(max-width: 760px), (max-height: 500px)");
+  let isCompact = compact.matches;
+  const t = new Spring(0, 170, 2 * Math.sqrt(170) * 0.82);   // 0 = in the card, 1 = lifted
+  let from = { dx: 0, dy: 0, s: 1 }, open = false, awake = false, last = "";
+
+  function measureFrom() {
+    const a = small.getBoundingClientRect(), b = big.getBoundingClientRect();
+    from = { dx: a.left + a.width / 2 - (b.left + b.width / 2), dy: a.top + a.height / 2 - (b.top + b.height / 2), s: a.width / b.width };
+  }
+  function raise() {
+    lift.classList.add("is-on");
+    big.style.transform = "";
+    measureFrom();
+    card.classList.add("is-lifted");
+    card.setAttribute("aria-expanded", "true");
+    open = true; awake = true; t.target = 1;
+    lift.focus({ preventScroll: true });
+  }
+  function lower() {
+    if (!open) return;
+    open = false; awake = true; t.target = 0;
+    card.setAttribute("aria-expanded", "false");
+  }
+  card.addEventListener("click", (e) => {
+    if (!isCompact) return;              // desktop: the card is a link to the map, as before
+    e.preventDefault();
+    if (!open) raise();
+  });
+  lift.addEventListener("click", lower);
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") lower(); });
+  compact.addEventListener("change", () => { isCompact = compact.matches; if (!isCompact && open) { lower(); t.snap(); } });
+
+  Ticker.add({
+    active: () => awake,
+    write(dt) {
+      if (REDUCED) t.snap(); else t.step(dt);
+      const v = t.value, k = 1 - v;
+      const tr = `translate3d(${(from.dx * k).toFixed(1)}px, ${(from.dy * k).toFixed(1)}px, 0) scale(${(from.s + (1 - from.s) * v).toFixed(4)})`;
+      if (tr !== last) { big.style.transform = tr; veil.style.opacity = clamp(v, 0, 1).toFixed(3); last = tr; }
+      if (!open && t.settled) {
+        t.snap(); awake = false; last = "";
+        lift.classList.remove("is-on");
+        card.classList.remove("is-lifted");
+        card.focus({ preventScroll: true });
+      }
+    },
+  });
+}
 /* =====================================================================
    Magnetic buttons
    ===================================================================== */
@@ -3171,7 +3327,8 @@ guard("light", initLight);
 guard("glass", () => initGlass(fluidState));
 guard("dock", initDock);
 guard("hint", initHint);
-guard("tilt-panels", initPanelTilt);
+guard("bodies", initBodies);
+guard("qr-lift", initQrLift);
 guard("hero", initHero);
 guard("magnetic", initMagnetic);
 guard("marquee", initMarquee);
